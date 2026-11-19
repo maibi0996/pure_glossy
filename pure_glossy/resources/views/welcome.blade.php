@@ -44,10 +44,11 @@
             <div class="card mb-3 flex-grow-1 left-table position-relative">
                 
                <div class="card-header d-flex justify-content-between align-items-center bg-dark text-white border-bottom border-secondary py-3">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-shopping-cart me-2"></i>Venta
+                <h5 class="card-title mb-0 d-flex align-items-center gap-2">
+                    <i class="fas fa-shopping-cart me-1"></i>
+                    Venta
                 </h5>
-                <div class="d-flex gap-2">
+                <div class="d-flex gap-2 ms-3">
                     {{-- Botón Agregar Promoción (a la izquierda) --}}
                     <button type="button" class="btn btn-warning fw-bold text-dark" data-bs-toggle="modal" data-bs-target="#buscarPromocionModal">
                         <i class="fas fa-gift me-1"></i> Agregar Promoción
