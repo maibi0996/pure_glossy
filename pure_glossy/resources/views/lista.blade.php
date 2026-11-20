@@ -267,7 +267,7 @@
                             <label for="id_marca" class="form-label">Marca</label>
                             <select class="form-select" id="id_marca" name="id_marca">
                                 <option value="" selected>Sin marca asignada</option>
-                                @foreach($marcas as $marca)
+                                @foreach($marcasActivas as $marca)
                                     <option value="{{ $marca->id_marca }}">{{ $marca->nombre }}</option>
                                 @endforeach
                             </select>

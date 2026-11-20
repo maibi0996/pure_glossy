@@ -95,7 +95,8 @@ class listacontroller extends Controller
 
         $proveedores = DB::table('proveedores')->where('estado', 'activo')->get();
         $categorias = DB::table('categorias')->get();
-        $marcas = DB::table('marcas')->where('estado', 'activo')->orderBy('nombre', 'asc')->get();
+        $marcas = DB::table('marcas')->orderBy('nombre', 'asc')->get();
+        $marcasActivas = $marcas->where('estado', 'activo');
         $etiquetas = DB::table('etiquetas')->orderBy('nombre', 'asc')->get();
 
         return view('lista', [
@@ -103,6 +104,7 @@ class listacontroller extends Controller
             'proveedores' => $proveedores,
             'categorias'  => $categorias,
             'marcas'      => $marcas,
+            'marcasActivas' => $marcasActivas,
             'etiquetas'   => $etiquetas,
             'search'      => $search,
             'sort'        => $sort,
