@@ -115,7 +115,7 @@
     </div>
 
     {{-- Columna Derecha --}}
-    <div class="col-lg-4 d-flex flex-column">
+    <div class="col-lg-4 right-column">
         @include('parciales.columna_derecha')
     </div>
 </div>

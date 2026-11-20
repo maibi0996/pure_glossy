@@ -496,3 +496,40 @@ label,
     border: 2px solid #FFF0F8 !important;
     border-radius: 10px;
 }
+
+/* Ficha y cuenta corriente de cliente */
+#modalFichaCliente .ficha-resumen {
+    background-color: #FFF9FC;
+    border: 1px solid #F3B5D8;
+    border-radius: 12px;
+}
+
+@media print {
+    #modalFichaCliente,
+    #modalFichaCliente .modal-dialog,
+    #modalFichaCliente .modal-content {
+        position: static !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    #modalFichaCliente .ficha-resumen {
+        background: #ffffff !important;
+        border: 1px solid #cccccc !important;
+        color: #000000 !important;
+    }
+
+    #modalFichaCliente .table,
+    #modalFichaCliente .table th,
+    #modalFichaCliente .table td {
+        background: #ffffff !important;
+        color: #000000 !important;
+        border-color: #cccccc !important;
+    }
+}
