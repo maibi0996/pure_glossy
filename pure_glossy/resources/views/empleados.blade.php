@@ -8,17 +8,26 @@
 <div class="row h-100">
     <div class="col-lg-8 d-flex flex-column">
         <div class="card mb-3 flex-grow-1 left-table border-secondary">
-            <div class="card-header d-flex justify-content-between align-items-center bg-dark text-white border-bottom border-secondary py-3">
+            
+            <div class="card-header d-flex justify-content-between align-items-center py-3"
+                style="background-color: #FFF0F8; color: #70405D; border-bottom: 1px solid #F38ECA;">
+
                 <h5 class="card-title mb-0 fw-bold">
                     <i class="fas fa-users me-2"></i>Usuarios
                 </h5>
-                <button type="button" class="btn btn-success fw-bold" data-bs-toggle="modal" data-bs-target="#veragregarusuario">
+
+                <button type="button" class="btn btn-primary fw-bold"
+                        data-bs-toggle="modal"
+                        data-bs-target="#veragregarusuario">
                     <i class="fas fa-user-plus me-1"></i> Agregar Usuario
                 </button>
+
             </div>
+
             <div class="card-body d-flex flex-column p-0">
                 <div class="table-responsive flex-grow-1 table-scrollgr">
-                    <table class="table table-dark table-striped align-middle mb-0">
+                    <table class="table table-dark table-striped align-middle mb-0"
+                            style="min-width: 900px; white-space: nowrap;">
                         <thead>
                             <tr>
                                 <th>ID</th>
@@ -35,7 +44,10 @@
                                 <td>{{ $usuario->id }}</td>
                                 <td>{{ $usuario->name }}</td>
                                 <td>{{ $usuario->email }}</td>
-                                <td><span class="badge bg-secondary">{{ $usuario->rol }}</span></td>
+                                <td><span class="badge rounded-pill"
+                                        style="background-color: #70405D; color: #FFFFFF;">
+                                        {{ $usuario->rol }}
+                                    </span></td>
                                 <td>{{ $usuario->estado }}</td>
                                 <td class="text-center">
                                     <div class="d-flex justify-content-center gap-1">
