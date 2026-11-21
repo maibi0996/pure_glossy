@@ -16,12 +16,16 @@ return new class extends Migration
             $table->string('nombre');
             $table->string('codigo', 100)->unique('codigo');
             $table->string('codigo_barra', 100)->unique('codigo_barra');
-            $table->bigInteger('id_proveedor')->index('id_proveedor');
+            $table->bigInteger('id_proveedor')->nullable()->index('id_proveedor');
             $table->integer('stock')->nullable();
             $table->decimal('precio_lista', 10)->nullable();
             $table->bigInteger('id_categoria')->nullable()->index('producxcategoria');
+            $table->bigInteger('id_marca')->nullable()->index('fk_producto_marca');
             $table->decimal('precio_venta', 10)->nullable();
             $table->enum('estado', ['activo', 'desactivado'])->nullable()->default('activo');
+            $table->text('descripcion')->nullable();
+            $table->string('imagen')->nullable();
+            $table->date('fecha_vencimiento')->nullable();
         });
     }
 

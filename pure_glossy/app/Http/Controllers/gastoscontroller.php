@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 
-class gastoscontroller extends Controller
+class GastosController extends Controller
 {
     public function mostrar(Request $request)
     {

@@ -25,18 +25,16 @@
         /* Header estructurado para que la X quede en el medio */
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .header-izq { flex: 1; }
-        .header-der { flex: 1; text-align: right; }
-        .header-centro { display: flex; justify-content: center; }
+        .header-der { flex: 1; text-align: right; font-size: 13px; line-height: 1.8; }
 
         .header-izq h1 { font-size: 22px; font-weight: bold; margin-bottom: 5px; }
         .logo { width: 100px; height: auto; }
         .datos-local { font-size: 12px; line-height: 1.5; color: #444; margin-top: 5px; }
-        .header-der { font-size: 13px; line-height: 1.8; }
         .comprobante-num { font-weight: bold; font-size: 14px; }
         
         hr { border: none; border-top: 1px solid #ccc; margin: 16px 0; }
         .datos-cliente { display: flex; justify-content: flex-end; margin-bottom: 16px; }
-        .datos-cliente table td { padding: 2px 8px; font-size: 13px; }
+        .datos-cliente table td { padding: 2px 8px; font-size: 13px; vertical-align: top; }
         .datos-cliente table td:first-child { font-weight: bold; text-align: right; }
         
         .tabla-productos { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
@@ -45,7 +43,13 @@
         .tabla-productos th:last-child, .tabla-productos td:last-child { text-align: right; }
         .tabla-productos tbody tr:nth-child(even) { background: #f9f9f9; }
         
-        .totales { display: flex; justify-content: flex-end; }
+        .resumen-inferior { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-top: 10px; }
+        .tabla-pagos { border-collapse: collapse; min-width: 260px; font-size: 12px; }
+        .tabla-pagos th { background: #f0f0f0; text-align: left; padding: 5px 10px; border-bottom: 1px solid #ccc; }
+        .tabla-pagos th:last-child, .tabla-pagos td:last-child { text-align: right; }
+        .tabla-pagos td { padding: 5px 10px; border-bottom: 1px solid #eee; }
+
+        .totales { display: flex; justify-content: flex-end; margin-left: auto; }
         .totales table { min-width: 260px; }
         .totales table td { padding: 5px 10px; font-size: 13px; }
         .totales table td:first-child { font-weight: bold; text-align: right; color: #444; }
@@ -105,104 +109,96 @@
                     </td>
                 </tr>
                 <tr>
-                    <td>TELEFONO</td>
+                    <td>TELÉFONO</td>
                     <td>
-                    @if($venta->clientec)
-                        {{ $venta->telefono_clientec ?? 'No proporcionado' }}
-                    @elseif(!empty($venta->cliente_telefono))
-                        {{ $venta->cliente_telefono }}
-                    @else
-                        No proporcionado
-                    @endif
-                </td>
+                        @if($venta->clientec)
+                            {{ $venta->telefono_clientec ?? 'No proporcionado' }}
+                        @elseif(!empty($venta->cliente_telefono))
+                            {{ $venta->cliente_telefono }}
+                        @else
+                            No proporcionado
+                        @endif
+                    </td>
                 </tr>
                 <tr>
-                <tr><td>VENDEDOR</td><td>{{ $venta->vendedor_name }}</td></tr>
-                <tr><td>MÉTODO DE PAGO</td><td>{{ $venta->metodo_pago }}</td></tr>
+                    <td>VENDEDOR</td>
+                    <td>{{ $venta->vendedor_name }}</td>
+                </tr>
+                <tr>
+                    <td>MÉTODO DE PAGO</td>
+                    <td>
+                        @if(isset($pagos) && $pagos->count() > 1)
+                            @foreach($pagos as $pago)
+                                <div>{{ $pago->metodo }}: <strong>${{ number_format($pago->monto, 2) }}</strong></div>
+                            @endforeach
+                        @else
+                            {{ $pagos->first()->metodo ?? $venta->metodo_pago }}
+                        @endif
+                    </td>
+                </tr>
             </table>
         </div>
         <hr>
-        @php
-            $serviciosCategorias = [13, 14];
-            $articulos = $productos->filter(function($item) use ($serviciosCategorias) {
-                $cat = strtolower($item->nombre_categoria ?? '');
-                return !in_array($item->id_categoria ?? 0, $serviciosCategorias) 
-                    && !str_starts_with($cat, 's -') 
-                    && !str_starts_with($cat, 'in -') 
-                    && !str_contains($cat, 'servicio') 
-                    && !str_contains($cat, 'instalac');
-            });
 
-            $servicios = $productos->filter(function($item) use ($serviciosCategorias) {
-                $cat = strtolower($item->nombre_categoria ?? '');
-                return in_array($item->id_categoria ?? 0, $serviciosCategorias) 
-                    || str_starts_with($cat, 's -') 
-                    || str_starts_with($cat, 'in -') 
-                    || str_contains($cat, 'servicio') 
-                    || str_contains($cat, 'instalac');
-            });
-        @endphp
+        <table class="tabla-productos">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Descripción</th>
+                    <th>Cant.</th>
+                    <th>Precio unit.</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($productos as $producto)
+                    <tr>
+                        <td>{{ $producto->codigo ?: $producto->codigo_barra }}</td>
+                        <td>
+                            {{ $producto->producto }}
+                            @if(isset($producto->precio_lista) && $producto->precio < $producto->precio_lista)
+                                <strong style="font-size: 11px;"> - Promo</strong>
+                            @endif
+                        </td>
+                        <td>{{ $producto->cantidad }}</td>
+                        <td>${{ number_format($producto->precio, 2) }}</td>
+                        <td>${{ number_format($producto->precio * $producto->cantidad, 2) }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
 
-        @if($articulos->count() > 0)
-            @if($servicios->count() > 0)
-                <div style="font-weight: bold; font-size: 12px; text-transform: uppercase; margin-bottom: 5px; background: #f0f0f0; padding: 4px 8px; border-left: 3px solid #333;">
-                    PRODUCTOS
-                </div>
+        <div class="resumen-inferior">
+            @if(isset($pagos) && $pagos->count() > 0)
+                <table class="tabla-pagos">
+                    <thead>
+                        <tr>
+                            <th>Forma de pago</th>
+                            <th>Importe</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($pagos as $pago)
+                            <tr>
+                                <td>{{ $pago->metodo }}</td>
+                                <td>${{ number_format($pago->monto, 2) }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             @endif
-            <table class="tabla-productos">
-                <thead><tr><th>Código</th><th>Descripción</th><th>Cant.</th><th>Precio unit.</th><th>Total</th></tr></thead>
-                <tbody>
-                    @foreach ($articulos as $producto)
-                        <tr>
-                            <td>{{ $producto->codigo ?: $producto->codigo_barra }}</td>
-                            <td>
-                                {{ $producto->producto }}
-                                @if(isset($producto->precio_lista) && $producto->precio < $producto->precio_lista)
-                                    <strong style="font-size: 11px;"> - Promo</strong>
-                                @endif
-                            </td>
-                            <td>{{ $producto->cantidad }}</td>
-                            <td>${{ number_format($producto->precio, 2) }}</td>
-                            <td>${{ number_format($producto->precio * $producto->cantidad, 2) }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        @endif
 
-        @if($servicios->count() > 0)
-            <div style="font-weight: bold; font-size: 12px; text-transform: uppercase; margin-top: 15px; margin-bottom: 5px; background: #f0f0f0; padding: 4px 8px; border-left: 3px solid #333;">
-                SERVICIOS E INSTALACIONES
+            <div class="totales">
+                <table>
+                    <tr><td>SUBTOTAL $</td><td>{{ number_format($venta->monto_total + $venta->descuento, 2) }}</td></tr>
+                    @if ($venta->descuento > 0)
+                        <tr><td>DESCUENTO $</td><td>{{ number_format($venta->descuento, 2) }}</td></tr>
+                    @endif
+                    <tr class="fila-total"><td>Total $</td><td>{{ number_format($venta->monto_total, 2) }}</td></tr>
+                </table>
             </div>
-            <table class="tabla-productos">
-                <thead><tr><th>Código</th><th>Descripción</th><th>Cant.</th><th>Precio unit.</th><th>Total</th></tr></thead>
-                <tbody>
-                    @foreach ($servicios as $servicio)
-                        <tr>
-                            <td>{{ $servicio->codigo ?: $servicio->codigo_barra }}</td>
-                            <td>
-                                {{ $servicio->producto }}
-                                @if(isset($servicio->precio_lista) && $servicio->precio < $servicio->precio_lista)
-                                    <strong style="font-size: 11px;"> - Promo</strong>
-                                @endif
-                            </td>
-                            <td>{{ $servicio->cantidad }}</td>
-                            <td>${{ number_format($servicio->precio, 2) }}</td>
-                            <td>${{ number_format($servicio->precio * $servicio->cantidad, 2) }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        @endif
-        <div class="totales">
-            <table>
-                <tr><td>SUBTOTAL $</td><td>{{ number_format($venta->monto_total + $venta->descuento, 2) }}</td></tr>
-                @if ($venta->descuento > 0)
-                    <tr><td>DESCUENTO $</td><td>{{ number_format($venta->descuento, 2) }}</td></tr>
-                @endif
-                <tr class="fila-total"><td>Total $</td><td>{{ number_format($venta->monto_total, 2) }}</td></tr>
-            </table>
         </div>
+
         <div class="footer"><p>Gracias por su compra — {{ $local['nombre'] }}</p></div>
         <div class="leyenda-no-valido">*** TICKET NO VÁLIDO COMO FACTURA ***</div>
     </div>

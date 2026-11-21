@@ -21,6 +21,7 @@ use App\Http\Controllers\BalanceController;
 use App\Http\Controllers\HistorialPresupuestoController;
 use App\Http\Controllers\MarcaController;
 use App\Http\Controllers\CategoriaController;
+use App\Http\Controllers\EtiquetaController;
 
 //rutas del login 
 
@@ -76,10 +77,11 @@ Route::get('/empleados/{id}/sesiones', [EmpleadosController::class, 'sesiones'])
 
 //ruta para clientes
 Route::get('/clientes', [ClienteController::class, 'mostrar'])->name('views.clientes');
-Route::POST('/clientes', [ClienteController::class, 'agregar'])->name('clientes.agregar');
-Route::get('/clientes/modificar', [ClienteController::class, 'modificar'])->name('clientes.modificar');
+Route::post('/clientes', [ClienteController::class, 'agregar'])->name('clientes.agregar');
+Route::post('/clientes/modificar', [ClienteController::class, 'modificar'])->name('clientes.modificar');
 Route::delete('/clientes/{id_cliente}', [ClienteController::class, 'borrar'])->name('clientes.borrar');
-
+Route::get('/clientes/{id_cliente}/movimientos', [ClienteController::class, 'movimientos'])->name('clientes.movimientos');
+Route::post('/clientes/{id_cliente}/movimientos', [ClienteController::class, 'registrarMovimiento'])->name('clientes.movimientos.guardar');
 
 //rutas para compras
 Route::get('/compras', [ComprasController::class, 'mostrar'])->name('views.compras');
@@ -194,3 +196,10 @@ Route::delete('/marcas/{id_marca}', [MarcaController::class, 'borrar'])->name('m
 Route::get('/categorias', [CategoriaController::class, 'index'])->name('categorias.index');
 Route::post('/categorias', [CategoriaController::class, 'agregar'])->name('categorias.agregar');
 Route::post('/categorias/modificar', [CategoriaController::class, 'modificar'])->name('categorias.modificar');
+Route::delete('/categorias/{id_categoria}', [CategoriaController::class, 'borrar'])->name('categorias.borrar');
+
+
+// Rutas de etiquetas
+Route::post('/etiquetas', [EtiquetaController::class, 'agregar'])->name('etiquetas.agregar');
+Route::post('/etiquetas/modificar', [EtiquetaController::class, 'modificar'])->name('etiquetas.modificar');
+Route::delete('/etiquetas/{id_etiqueta}', [EtiquetaController::class, 'borrar'])->name('etiquetas.borrar');

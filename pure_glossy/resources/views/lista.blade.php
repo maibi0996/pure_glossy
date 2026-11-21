@@ -1,4 +1,3 @@
-
 @extends('layouts.nav')
 
 @section('title', 'Lista')
@@ -14,6 +13,16 @@
                         <p class="mb-0 fw-bold">{{ $error }}</p>
                     @endforeach
                 </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    @if (session('error'))
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div class="fw-bold">{{ session('error') }}</div>
             </div>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
@@ -45,16 +54,22 @@
                         <i class="fas fa-plus me-1"></i> Producto
                     </button>
                 </div>
-                <div class="col-6 col-md-2">
-                    <button type="button" class="btn btn-secondary w-100" data-bs-toggle="modal" data-bs-target="#gestionarMarcasModal">
+                <div class="col-4 col-md-2">
+                    <button type="button" class="btn btn-secondary w-100 h-100" data-bs-toggle="modal" data-bs-target="#gestionarMarcasModal">
                         <i class="fas fa-tag me-1"></i> Marcas
                     </button>
                 </div>
-                <div class="col-6 col-md-2">
-                    <button type="button" class="btn btn-secondary w-100" data-bs-toggle="modal" data-bs-target="#gestionarCategoriasModal">
-                        <i class="fas fa-list me-1"></i> Categorías
+                <div class="col-4 col-md-1">
+                    <button type="button" class="btn btn-secondary w-100 h-100 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#gestionarCategoriasModal" title="Categorías">
+                        <i class="fas fa-list"></i>
                     </button>
                 </div>
+                <div class="col-4 col-md-1">
+                    <button type="button" class="btn btn-secondary w-100 h-100 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#gestionarEtiquetasModal" title="Etiquetas">
+                        <i class="fas fa-tags"></i>
+                    </button>
+                </div>
+                
             @endif
         </form>
 
@@ -71,10 +86,11 @@
                         <table class="table table-dark table-striped mb-0">
                             <thead>
                                 <tr>
-                                    <th>id</th>
+                                    <th>ID</th>
+                                    <th>Imagen</th>
                                     <th>Nombre</th>
-                                    <th>Codigo</th>
-                                    <th>Codigo de barra</th>
+                                    <th>Código</th>
+                                    <th>Código de barra</th>
                                     @if(Auth::check() && Auth::user()->rol === 'administrador')
                                     <th>Precio lista</th>
                                     @endif
@@ -89,10 +105,12 @@
                                         </a>
                                     </th>
                                     <th>Marca</th>
-                                    <th>Categoria</th>
+                                    <th>Categoría</th>
+                                    <th>Etiquetas</th>
+                                    <th>Vencimiento</th>
                                     <th>Proveedor</th>
                                     <th>Estado</th>
-                                    @if(Auth::user()->rol === 'administrador')
+                                    @if(Auth::check() && Auth::user()->rol === 'administrador')
                                         <th style="text-align: center">Acciones</th>
                                     @endif
                                 </tr>
@@ -101,7 +119,19 @@
                                 @foreach ($productos as $producto)
                                 <tr>
                                     <td>{{ $producto->id_producto }}</td>
-                                    <td>{{ $producto->nombre }}</td>
+                                    <td>
+                                        @if(!empty($producto->imagen))
+                                            <img src="{{ asset('storage/' . $producto->imagen) }}" alt="{{ $producto->nombre }}" style="width: 44px; height: 44px; object-fit: cover; border-radius: 6px;">
+                                        @else
+                                            <span class="text-muted small">Sin foto</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">{{ $producto->nombre }}</div>
+                                        @if(!empty($producto->descripcion))
+                                            <small class="text-muted d-block" style="max-width: 220px;">{{ $producto->descripcion }}</small>
+                                        @endif
+                                    </td>
                                     <td>{{ $producto->codigo }}</td>
                                     <td>{{ $producto->codigo_barra }}</td>
                                     @if(Auth::check() && Auth::user()->rol === 'administrador')
@@ -111,10 +141,24 @@
                                     <td>{{ $producto->stock }}</td>
                                     <td><span class="badge bg-info text-dark">{{ $producto->nombre_marca }}</span></td>
                                     <td><span class="badge bg-secondary">{{ $producto->categoria }}</span></td>
+                                    <td>
+                                        @if(!empty($producto->etiquetas))
+                                            <div class="d-flex flex-wrap gap-1">
+                                                @foreach($producto->etiquetas as $etiquetaNombre)
+                                                    <span class="badge bg-light text-dark border">{{ $etiquetaNombre }}</span>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <span class="text-muted small">-</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        {{ !empty($producto->fecha_vencimiento) ? \Carbon\Carbon::parse($producto->fecha_vencimiento)->format('d/m/Y') : '-' }}
+                                    </td>
                                     <td>{{ $producto->nombre_proveedor }}</td>
                                     <td>{{ $producto->estado }}</td>
                                     
-                                    @if(Auth::user()->rol === 'administrador')
+                                    @if(Auth::check() && Auth::user()->rol === 'administrador')
                                     <td class="text-center">
                                         <div class="d-flex justify-content-center align-items-center gap-2">
                                             <button type="button" class="btn btn-primary btn-sm" 
@@ -122,6 +166,9 @@
                                                     data-bs-target="#vermodificarproducModal"
                                                     data-id="{{ $producto->id_producto }}"
                                                     data-nombre="{{ $producto->nombre }}"
+                                                    data-descripcion="{{ $producto->descripcion }}"
+                                                    data-imagen="{{ $producto->imagen ? asset('storage/' . $producto->imagen) : '' }}"
+                                                    data-fecha_vencimiento="{{ $producto->fecha_vencimiento }}"
                                                     data-codigo="{{ $producto->codigo }}"
                                                     data-codigo_barra="{{ $producto->codigo_barra }}"
                                                     data-precio_lista="{{ $producto->precio_lista }}"
@@ -130,10 +177,11 @@
                                                     data-id_proveedor="{{ $producto->id_proveedor }}"
                                                     data-id_categoria="{{ $producto->id_categoria }}"
                                                     data-id_marca="{{ $producto->id_marca }}"
+                                                    data-etiquetas='@json($producto->etiqueta_ids ?? [])'
                                                     data-estado="{{ $producto->estado }}">
                                                 Modificar
                                             </button>
-                                            <form class="m-0 d-flex" action="{{ route('lista.borrar', ['id_producto' => $producto->id_producto, 'search' => $search, 'sort' => $sort]) }}" method="POST">
+                                            <form class="m-0 d-flex" action="{{ route('lista.borrar', ['id_producto' => $producto->id_producto, 'search' => $search, 'sort' => $sort]) }}" method="POST" onsubmit="return confirm('¿Desactivar este producto?')">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
@@ -178,7 +226,7 @@
 <div class="modal fade" id="agregarModal" tabindex="-1" aria-labelledby="veragregarLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content bg-dark text-white">
-            <form action="{{ route('lista.agregar') }}" method="POST">
+            <form action="{{ route('lista.agregar') }}" method="POST" enctype="multipart/form-data">
                 @csrf 
                 <div class="modal-header">
                     <h5 class="modal-title" id="verlistaLabel">Agregar Producto</h5>
@@ -191,6 +239,22 @@
                             <input type="text" class="form-control" id="nombre" name="nombre" required>
                         </div>
                         <div class="col-md-6 mb-3">
+                            <label for="fecha_vencimiento" class="form-label">Fecha de vencimiento</label>
+                            <input type="date" class="form-control" id="fecha_vencimiento" name="fecha_vencimiento">
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label for="descripcion" class="form-label">Descripción</label>
+                            <textarea class="form-control" id="descripcion" name="descripcion" rows="2" placeholder="Detalle del producto, tono, acabado, etc."></textarea>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="imagen" class="form-label">Imagen del producto</label>
+                            <input type="file" class="form-control" id="imagen" name="imagen" accept="image/*">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="stock" class="form-label">Stock</label>
+                            <input type="number" class="form-control" id="stock" name="stock" min="0" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
                             <label for="codigo" class="form-label">Código</label>
                             <input type="text" class="form-control" id="codigo" name="codigo" required>
                         </div>
@@ -198,16 +262,12 @@
                             <label for="codigo_barra" class="form-label">Código de Barra</label>
                             <input type="text" class="form-control" id="codigo_barra" name="codigo_barra" required>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="stock" class="form-label">Stock</label>
-                            <input type="number" class="form-control" id="stock" name="stock" min="0" required>
-                        </div>
 
                         <div class="col-md-6 mb-3">
                             <label for="id_marca" class="form-label">Marca</label>
                             <select class="form-select" id="id_marca" name="id_marca">
                                 <option value="" selected>Sin marca asignada</option>
-                                @foreach($marcas as $marca)
+                                @foreach($marcasActivas as $marca)
                                     <option value="{{ $marca->id_marca }}">{{ $marca->nombre }}</option>
                                 @endforeach
                             </select>
@@ -231,6 +291,22 @@
                                     <option value="{{ $proveedor->id_proveedor }}">{{ $proveedor->nombre }}</option>
                                 @endforeach
                             </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label d-block">Etiquetas (una o más)</label>
+                            <div class="d-flex flex-wrap gap-2 p-2 rounded border">
+                                @forelse($etiquetas as $etiqueta)
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="etiquetas[]" value="{{ $etiqueta->id_etiqueta }}" id="add_etiqueta_{{ $etiqueta->id_etiqueta }}">
+                                        <label class="form-check-label" for="add_etiqueta_{{ $etiqueta->id_etiqueta }}">
+                                            {{ $etiqueta->nombre }}
+                                        </label>
+                                    </div>
+                                @empty
+                                    <small class="text-muted">No hay etiquetas creadas aún.</small>
+                                @endforelse
+                            </div>
                         </div>
 
                         <div class="col-md-6 mb-3">
@@ -274,7 +350,7 @@
 <div class="modal fade" id="vermodificarproducModal" tabindex="-1" aria-labelledby="vermodificarproducLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content bg-dark text-white">
-            <form action="{{ route('lista.modificar', ['search' => $search, 'sort' => $sort]) }}" method="POST">
+            <form action="{{ route('lista.modificar', ['search' => $search, 'sort' => $sort]) }}" method="POST" enctype="multipart/form-data">
                 @csrf 
                 <input type="hidden" name="id_producto" id="id_producto">
                 <div class="modal-header">
@@ -286,6 +362,22 @@
                         <div class="col-md-6 mb-3">
                             <label for="mod_nombre" class="form-label">Nombre</label>
                             <input type="text" class="form-control" id="mod_nombre" name="nombre" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="mod_fecha_vencimiento" class="form-label">Fecha de vencimiento</label>
+                            <input type="date" class="form-control" id="mod_fecha_vencimiento" name="fecha_vencimiento">
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label for="mod_descripcion" class="form-label">Descripción</label>
+                            <textarea class="form-control" id="mod_descripcion" name="descripcion" rows="2"></textarea>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="mod_imagen" class="form-label">Cambiar imagen del producto</label>
+                            <input type="file" class="form-control" id="mod_imagen" name="imagen" accept="image/*">
+                            <div id="mod_imagen_preview_wrap" class="mt-2" style="display: none;">
+                                <img id="mod_imagen_preview" src="" alt="Imagen actual" style="width: 64px; height: 64px; object-fit: cover; border-radius: 6px;">
+                                <small class="text-muted ms-2">Imagen actual</small>
+                            </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="mod_codigo" class="form-label">Código</label>
@@ -327,10 +419,25 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="mod_estado" class="form-label">Estado</label>
-                            <select class="form-select text-white bg-secondary" name="estado" id="mod_estado">
+                            <select class="form-select" name="estado" id="mod_estado">
                                 <option value="activo">Activo</option>
                                 <option value="desactivado">Desactivado</option>
                             </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label d-block">Etiquetas (una o más)</label>
+                            <div class="d-flex flex-wrap gap-2 p-2 rounded border">
+                                @forelse($etiquetas as $etiqueta)
+                                    <div class="form-check">
+                                        <input class="form-check-input mod-etiqueta-check" type="checkbox" name="etiquetas[]" value="{{ $etiqueta->id_etiqueta }}" id="mod_etiqueta_{{ $etiqueta->id_etiqueta }}">
+                                        <label class="form-check-label" for="mod_etiqueta_{{ $etiqueta->id_etiqueta }}">
+                                            {{ $etiqueta->nombre }}
+                                        </label>
+                                    </div>
+                                @empty
+                                    <small class="text-muted">No hay etiquetas creadas aún.</small>
+                                @endforelse
+                            </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="mod_precio_lista" class="form-label">Precio lista (costo)</label>
@@ -366,16 +473,16 @@
     </div>
 </div>
 
-{{-- MODAL GESTIONAR MARCAS --}}
+{{-- MODAL GESTIONAR MARCAS (ALTA + EDICIÓN + DESACTIVAR) --}}
 <div class="modal fade" id="gestionarMarcasModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content bg-dark text-white border-secondary">
             <div class="modal-header border-secondary">
-                <h5 class="modal-title"><i class="fas fa-tags me-2"></i>Gestionar Marcas de Maquillaje</h5>
+                <h5 class="modal-title"><i class="fas fa-tags me-2"></i>Gestionar Marcas</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form action="{{ route('marcas.agregar') }}" method="POST" class="row g-2 mb-4 p-3 bg-secondary rounded">
+                <form action="{{ route('marcas.agregar') }}" method="POST" class="row g-2 mb-3 p-3 border rounded">
                     @csrf
                     <div class="col-md-5">
                         <input type="text" name="nombre" class="form-control" placeholder="Nombre de la marca (ej. MAC, Ruby Rose)" required>
@@ -388,6 +495,29 @@
                     </div>
                 </form>
 
+                {{-- Formulario para editar marca seleccionada --}}
+                <form id="formEditarMarca" action="{{ route('marcas.modificar') }}" method="POST" class="row g-2 mb-4 p-3 border rounded" style="display: none;">
+                    @csrf
+                    <input type="hidden" name="id_marca" id="edit_marca_id">
+                    <div class="col-12"><small class="fw-bold">Editando marca:</small></div>
+                    <div class="col-md-4">
+                        <input type="text" name="nombre" id="edit_marca_nombre" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" name="descripcion" id="edit_marca_descripcion" class="form-control" placeholder="Descripción">
+                    </div>
+                    <div class="col-md-2">
+                        <select name="estado" id="edit_marca_estado" class="form-select">
+                            <option value="activo">Activo</option>
+                            <option value="desactivado">Desactivado</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex gap-1">
+                        <button type="submit" class="btn btn-primary btn-sm w-100">Guardar</button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="cancelarEdicionMarca()">×</button>
+                    </div>
+                </form>
+
                 <h6 class="border-bottom border-secondary pb-2">Marcas Existentes</h6>
                 <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
                     <table class="table table-dark table-striped mb-0">
@@ -396,6 +526,7 @@
                                 <th>Nombre</th>
                                 <th>Descripción</th>
                                 <th>Estado</th>
+                                <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -404,9 +535,26 @@
                                 <td>{{ $m->nombre }}</td>
                                 <td>{{ $m->descripcion ?? '-' }}</td>
                                 <td><span class="badge {{ $m->estado == 'activo' ? 'bg-success' : 'bg-danger' }}">{{ $m->estado }}</span></td>
+                                <td class="text-center">
+                                    <div class="d-flex justify-content-center gap-1">
+                                        <button type="button" class="btn btn-primary btn-sm"
+                                            data-id="{{ $m->id_marca }}"
+                                            data-nombre="{{ $m->nombre }}"
+                                            data-descripcion="{{ $m->descripcion ?? '' }}"
+                                            data-estado="{{ $m->estado }}"
+                                            onclick="cargarEdicionMarca(this)">
+                                            Editar
+                                        </button>
+                                        <form class="m-0 d-inline" action="{{ route('marcas.borrar', ['id_marca' => $m->id_marca]) }}" method="POST" onsubmit="return confirm('¿Desactivar esta marca?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-danger btn-sm">Desactivar</button>
+                                        </form>
+                                    </div>
+                                </td>
                             </tr>
                             @empty
-                            <tr><td colspan="3" class="text-center text-muted">No hay marcas registradas.</td></tr>
+                            <tr><td colspan="4" class="text-center text-muted">No hay marcas registradas.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -416,7 +564,7 @@
     </div>
 </div>
 
-{{-- MODAL GESTIONAR CATEGORÍAS --}}
+{{-- MODAL GESTIONAR CATEGORÍAS (ALTA + EDICIÓN + ELIMINAR) --}}
 <div class="modal fade" id="gestionarCategoriasModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content bg-dark text-white border-secondary">
@@ -425,7 +573,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form action="{{ route('categorias.agregar') }}" method="POST" class="row g-2 mb-4 p-3 bg-secondary rounded">
+                <form action="{{ route('categorias.agregar') }}" method="POST" class="row g-2 mb-3 p-3 border rounded">
                     @csrf
                     <div class="col-md-5">
                         <input type="text" name="categoria" class="form-control" placeholder="Categoría (ej. Gloss, Delineador, Rubor)" required>
@@ -438,6 +586,23 @@
                     </div>
                 </form>
 
+                {{-- Formulario para editar categoría seleccionada --}}
+                <form id="formEditarCategoria" action="{{ route('categorias.modificar') }}" method="POST" class="row g-2 mb-4 p-3 border rounded" style="display: none;">
+                    @csrf
+                    <input type="hidden" name="id_categoria" id="edit_categoria_id">
+                    <div class="col-12"><small class="fw-bold">Editando categoría:</small></div>
+                    <div class="col-md-5">
+                        <input type="text" name="categoria" id="edit_categoria_nombre" class="form-control" required>
+                    </div>
+                    <div class="col-md-5">
+                        <input type="text" name="descripcion" id="edit_categoria_descripcion" class="form-control" placeholder="Descripción">
+                    </div>
+                    <div class="col-md-2 d-flex gap-1">
+                        <button type="submit" class="btn btn-primary btn-sm w-100">Guardar</button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="cancelarEdicionCategoria()">×</button>
+                    </div>
+                </form>
+
                 <h6 class="border-bottom border-secondary pb-2">Categorías Registradas</h6>
                 <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
                     <table class="table table-dark table-striped mb-0">
@@ -445,16 +610,105 @@
                             <tr>
                                 <th>Categoría</th>
                                 <th>Descripción</th>
+                                <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($categorias as $c)
+                        <tr>
+                            <td>{{ $c->categoria }}</td>
+                            <td>{{ $c->descripcion ?? '-' }}</td>
+                            <td class="text-center">
+                                <div class="d-flex justify-content-center gap-1">
+                                    <button type="button" class="btn btn-primary btn-sm"
+                                        data-id="{{ $c->id_categoria }}"
+                                        data-categoria="{{ $c->categoria }}"
+                                        data-descripcion="{{ $c->descripcion ?? '' }}"
+                                        onclick="cargarEdicionCategoria(this)">
+                                        Editar
+                                    </button>
+                                    <form class="m-0 d-inline" action="{{ route('categorias.borrar', ['id_categoria' => $c->id_categoria]) }}" method="POST" onsubmit="return confirm('¿Eliminar esta categoría?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr><td colspan="3" class="text-center text-muted">No hay categorías cargadas.</td></tr>
+                        @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- MODAL GESTIONAR ETIQUETAS (ALTA + EDICIÓN + ELIMINAR) --}}
+<div class="modal fade" id="gestionarEtiquetasModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark text-white border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title"><i class="fas fa-tags me-2"></i>Gestionar Etiquetas</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{{ route('etiquetas.agregar') }}" method="POST" class="row g-2 mb-3 p-3 border rounded">
+                    @csrf
+                    <div class="col-md-9">
+                        <input type="text" name="nombre" class="form-control" placeholder="Etiqueta (ej. lápiz, crayón, líquido)" required>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-success w-100">Crear Etiqueta</button>
+                    </div>
+                </form>
+
+                <form id="formEditarEtiqueta" action="{{ route('etiquetas.modificar') }}" method="POST" class="row g-2 mb-4 p-3 border rounded" style="display: none;">
+                    @csrf
+                    <input type="hidden" name="id_etiqueta" id="edit_etiqueta_id">
+                    <div class="col-12"><small class="fw-bold">Editando etiqueta:</small></div>
+                    <div class="col-md-8">
+                        <input type="text" name="nombre" id="edit_etiqueta_nombre" class="form-control" required>
+                    </div>
+                    <div class="col-md-4 d-flex gap-1">
+                        <button type="submit" class="btn btn-primary btn-sm w-100">Guardar</button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="cancelarEdicionEtiqueta()">×</button>
+                    </div>
+                </form>
+
+                <h6 class="border-bottom border-secondary pb-2">Etiquetas Registradas</h6>
+                <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                    <table class="table table-dark table-striped mb-0">
+                        <thead>
                             <tr>
-                                <td>{{ $c->categoria }}</td>
-                                <td>{{ $c->descripcion ?? '-' }}</td>
+                                <th>Nombre</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($etiquetas as $et)
+                            <tr>
+                                <td>{{ $et->nombre }}</td>
+                                <td class="text-center">
+                                    <div class="d-flex justify-content-center gap-1">
+                                        <button type="button" class="btn btn-primary btn-sm"
+                                            data-id="{{ $et->id_etiqueta }}"
+                                            data-nombre="{{ $et->nombre }}"
+                                            onclick="cargarEdicionEtiqueta(this)">
+                                            Editar
+                                        </button>
+                                        <form class="m-0 d-inline" action="{{ route('etiquetas.borrar', ['id_etiqueta' => $et->id_etiqueta]) }}" method="POST" onsubmit="return confirm('¿Eliminar esta etiqueta?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+                                        </form>
+                                    </div>
+                                </td>
                             </tr>
                             @empty
-                            <tr><td colspan="2" class="text-center text-muted">No hay categorías cargadas.</td></tr>
+                            <tr><td colspan="2" class="text-center text-muted">No hay etiquetas creadas.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -536,16 +790,39 @@
             const button = event.relatedTarget;
     
             vermodificarproducModal.querySelector('#id_producto').value = button.getAttribute('data-id');
-            vermodificarproducModal.querySelector('#mod_nombre').value = button.getAttribute('data-nombre');
-            vermodificarproducModal.querySelector('#mod_codigo').value = button.getAttribute('data-codigo');
-            vermodificarproducModal.querySelector('#mod_codigo_barra').value = button.getAttribute('data-codigo_barra');
-            vermodificarproducModal.querySelector('#mod_precio_lista').value = button.getAttribute('data-precio_lista');
-            vermodificarproducModal.querySelector('#mod_precio_venta').value = button.getAttribute('data-precio_venta');
-            vermodificarproducModal.querySelector('#mod_stock').value = button.getAttribute('data-stock');
+            vermodificarproducModal.querySelector('#mod_nombre').value = button.getAttribute('data-nombre') || '';
+            vermodificarproducModal.querySelector('#mod_descripcion').value = button.getAttribute('data-descripcion') || '';
+            vermodificarproducModal.querySelector('#mod_fecha_vencimiento').value = button.getAttribute('data-fecha_vencimiento') || '';
+            vermodificarproducModal.querySelector('#mod_codigo').value = button.getAttribute('data-codigo') || '';
+            vermodificarproducModal.querySelector('#mod_codigo_barra').value = button.getAttribute('data-codigo_barra') || '';
+            vermodificarproducModal.querySelector('#mod_precio_lista').value = button.getAttribute('data-precio_lista') || '';
+            vermodificarproducModal.querySelector('#mod_precio_venta').value = button.getAttribute('data-precio_venta') || '';
+            vermodificarproducModal.querySelector('#mod_stock').value = button.getAttribute('data-stock') || 0;
             vermodificarproducModal.querySelector('#mod_id_proveedor').value = button.getAttribute('data-id_proveedor') || '';
             vermodificarproducModal.querySelector('#mod_id_categoria').value = button.getAttribute('data-id_categoria') || '';
             vermodificarproducModal.querySelector('#mod_id_marca').value = button.getAttribute('data-id_marca') || '';
             vermodificarproducModal.querySelector('#mod_estado').value = button.getAttribute('data-estado') || 'activo';
+
+            const imgUrl = button.getAttribute('data-imagen');
+            const previewWrap = document.getElementById('mod_imagen_preview_wrap');
+            const previewImg = document.getElementById('mod_imagen_preview');
+            if (imgUrl) {
+                previewImg.src = imgUrl;
+                previewWrap.style.display = 'block';
+            } else {
+                previewImg.src = '';
+                previewWrap.style.display = 'none';
+            }
+
+            let etiquetasAsignadas = [];
+            try {
+                etiquetasAsignadas = JSON.parse(button.getAttribute('data-etiquetas') || '[]').map(Number);
+            } catch (e) {
+                etiquetasAsignadas = [];
+            }
+            document.querySelectorAll('.mod-etiqueta-check').forEach(chk => {
+                chk.checked = etiquetasAsignadas.includes(Number(chk.value));
+            });
 
             document.getElementById('mod_ganancia_pct').value = '';
             document.getElementById('mod_sugerido_container').style.display = 'none';
@@ -555,6 +832,53 @@
             const input = document.getElementById('inputSearchProductos');
             if(input) {
                 input.value = input.value.trim().replace(/\s+/g, ' ');
+            }
+        });
+    });
+
+    function cargarEdicionMarca(btn) {
+        const form = document.getElementById('formEditarMarca');
+        form.style.display = 'flex';
+        document.getElementById('edit_marca_id').value = btn.dataset.id || '';
+        document.getElementById('edit_marca_nombre').value = btn.dataset.nombre || '';
+        document.getElementById('edit_marca_descripcion').value = btn.dataset.descripcion || '';
+        document.getElementById('edit_marca_estado').value = btn.dataset.estado || 'activo';
+        document.getElementById('edit_marca_nombre').focus();
+    }
+
+    function cancelarEdicionMarca() {
+        document.getElementById('formEditarMarca').style.display = 'none';
+    }
+
+    function cargarEdicionCategoria(btn) {
+        const form = document.getElementById('formEditarCategoria');
+        form.style.display = 'flex';
+        document.getElementById('edit_categoria_id').value = btn.dataset.id || '';
+        document.getElementById('edit_categoria_nombre').value = btn.dataset.categoria || '';
+        document.getElementById('edit_categoria_descripcion').value = btn.dataset.descripcion || '';
+        document.getElementById('edit_categoria_nombre').focus();
+    }
+
+    function cancelarEdicionCategoria() {
+        document.getElementById('formEditarCategoria').style.display = 'none';
+    }
+
+    function cargarEdicionEtiqueta(btn) {
+        const form = document.getElementById('formEditarEtiqueta');
+        form.style.display = 'flex';
+        document.getElementById('edit_etiqueta_id').value = btn.dataset.id || '';
+        document.getElementById('edit_etiqueta_nombre').value = btn.dataset.nombre || '';
+        document.getElementById('edit_etiqueta_nombre').focus();
+    }
+
+    function cancelarEdicionEtiqueta() {
+        document.getElementById('formEditarEtiqueta').style.display = 'none';
+    }
+
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('hide.bs.modal', () => {
+            if (document.activeElement && modal.contains(document.activeElement)) {
+                document.activeElement.blur();
             }
         });
     });

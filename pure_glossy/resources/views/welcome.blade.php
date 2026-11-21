@@ -87,39 +87,57 @@
                 </div>
             </div>
             
-            {{-- Sección de Totales y Filtros --}}
+            {{-- Sección de Totales y Métodos de Pago --}}
             <div class="filtros mb-3 p-3 bg-dark rounded border border-secondary">
                 <div class="card-body">
                     <h5 class="card-title mb-3"><i class="fas fa-cash-register me-2"></i>Ventas Totales</h5>
                     
-                    <div class="row align-items-center">
+                    <div class="row align-items-start">
                         <div class="col-md-6 mb-3 mb-md-0">
-                            <select class="form-select mb-3" name="metodo_pago" id="metodo_pago" required onchange="toggleClientesCorrientes()">
-                                <option selected disabled value="">Método de pago</option>
-                                @foreach($metodosDePago as $metodo)
-                                    <option value="{{ $metodo->id_metodo_pago }}">{{ $metodo->nombre }}</option>
-                                @endforeach
-                            </select>
-
-                            <div id="clientes_corrientes_container" style="display: none;">
-                                <select class="form-select mb-3" name="id_cliente" id="id_cliente">
-                                    <option selected disabled value="">Seleccione un cliente</option>
-                                </select>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label fw-bold mb-0">Métodos de pago</label>
+                                <button type="button" class="btn btn-sm btn-outline-info" onclick="agregarFilaPago()">
+                                    <i class="fas fa-plus me-1"></i> Agregar método
+                                </button>
                             </div>
 
-                            {{-- Campos opcionales para datos manuales u origen Presupuestos --}}
-                            <div id="cliente_casual_container" class="mt-2">
-                                <div class="row g-2 mb-2">
-                                    <div class="col-6">
-                                        <input type="text" name="cliente_nombre" id="cliente_nombre" placeholder="Nombre cliente (Opcional)" class="form-control bg-dark text-white border-secondary">
-                                    </div>
-                                    <div class="col-6">
-                                        <input type="text" name="cliente_telefono" id="cliente_telefono" placeholder="Teléfono (Opcional)" class="form-control bg-dark text-white border-secondary">
-                                    </div>
+                            <div id="contenedorPagos">
+                                {{-- Filas de pago generadas dinámicamente --}}
+                            </div>
+
+                            <div class="d-flex justify-content-between small mt-2 px-1">
+                                <span>Restante por asignar:</span>
+                                <strong id="restantePago" class="text-warning">$0.00</strong>
+                            </div>
+
+                            <div class="mt-3">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="asociar_cliente_corriente" onchange="actualizarVisibilidadCliente()">
+                                    <label class="form-check-label small fw-bold text-info" for="asociar_cliente_corriente">
+                                        Asociar venta a cliente de cuenta corriente
+                                    </label>
                                 </div>
-                                <div class="row">
-                                    <div class="col-12">
-                                        <textarea name="observaciones" id="observaciones" placeholder="Observaciones internas de la venta (Opcional)" rows="2" class="form-control bg-dark text-white border-secondary"></textarea>
+
+                                <div id="clientes_corrientes_container" class="mb-2" style="display: none;">
+                                    <label for="id_cliente" class="form-label small fw-bold text-info">Cliente Cuenta Corriente</label>
+                                    <select class="form-select" name="id_cliente" id="id_cliente">
+                                        <option selected disabled value="">Seleccione un cliente</option>
+                                    </select>
+                                </div>
+
+                                <div id="cliente_casual_container" class="mt-2">
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <input type="text" name="cliente_nombre" id="cliente_nombre" placeholder="Nombre cliente (Opcional)" class="form-control bg-dark text-white border-secondary">
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="text" name="cliente_telefono" id="cliente_telefono" placeholder="Teléfono (Opcional)" class="form-control bg-dark text-white border-secondary">
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <textarea name="observaciones" id="observaciones" placeholder="Observaciones internas de la venta (Opcional)" rows="2" class="form-control bg-dark text-white border-secondary"></textarea>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -146,7 +164,7 @@
 
                             <div class="mb-2">
                                 <label for="monto_recibido" class="form-label fw-bold">
-                                    Monto recibido:
+                                    Monto recibido (efectivo):
                                 </label>
 
                                 <input
@@ -155,8 +173,8 @@
                                     class="form-control"
                                     placeholder="Ingrese el monto recibido"
                                     min="0"
-                                step="0.01"
-                                oninput="calcularVuelto()"
+                                    step="0.01"
+                                    oninput="calcularVuelto()"
                                 >
                             </div>
 
@@ -313,8 +331,10 @@
 @endif
 
 <script>
-    // Variable global para que cada fila del formulario tenga name="productos[itemIndex][...]" único
+    const METODOS_PAGO = @json($metodosDePago);
     let itemIndex = 0;
+    let promoIndex = 0;
+    let pagoIndex = 0;
 
     // ==========================================
     // 0. FUNCIONES DE APOYO Y NORMALIZACIÓN
@@ -324,8 +344,95 @@
         return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
     }
 
+    function getTotalVentaNumero() {
+        const totalVentaElement = document.querySelector('#totalVenta');
+        if (!totalVentaElement) return 0;
+        return parseFloat(totalVentaElement.textContent.replace('$', '').trim()) || 0;
+    }
+
     // ==========================================
-    // 1. BÚSQUEDA Y AGREGADO DE PRODUCTOS INDIVIDUALES (NORMAL)
+    // 1. PAGOS COMBINADOS
+    // ==========================================
+    function agregarFilaPago(metodoId = '', monto = '') {
+        const contenedor = document.getElementById('contenedorPagos');
+        const idx = pagoIndex++;
+
+        const opcionesHtml = METODOS_PAGO.map(m =>
+            `<option value="${m.id_metodo_pago}" ${String(m.id_metodo_pago) === String(metodoId) ? 'selected' : ''}>${m.nombre}</option>`
+        ).join('');
+
+        const fila = document.createElement('div');
+        fila.className = 'row g-2 mb-2 fila-pago align-items-center';
+        fila.innerHTML = `
+            <div class="col-6">
+                <select class="form-select pago-metodo" name="pagos[${idx}][id_metodo_pago]" required onchange="evaluarPagos()">
+                    <option selected disabled value="">Método...</option>
+                    ${opcionesHtml}
+                </select>
+            </div>
+            <div class="col-4">
+                <input type="number" class="form-control pago-monto" name="pagos[${idx}][monto]" placeholder="Monto" step="0.01" min="0.01" value="${monto}" required oninput="evaluarPagos()">
+            </div>
+            <div class="col-2 text-end">
+                <button type="button" class="btn btn-outline-danger btn-sm w-100 btn-quitar-pago" onclick="quitarFilaPago(this)" title="Quitar pago">×</button>
+            </div>
+        `;
+
+        contenedor.appendChild(fila);
+        actualizarBotonesQuitarPago();
+        evaluarPagos();
+    }
+
+    function quitarFilaPago(btn) {
+        const filas = document.querySelectorAll('.fila-pago');
+        if (filas.length <= 1) return;
+        const fila = btn.closest('.fila-pago');
+        if (fila) fila.remove();
+        actualizarBotonesQuitarPago();
+        evaluarPagos();
+    }
+
+    function actualizarBotonesQuitarPago() {
+        const filas = document.querySelectorAll('.fila-pago');
+        filas.forEach(fila => {
+            const btn = fila.querySelector('.btn-quitar-pago');
+            if (btn) btn.disabled = (filas.length <= 1);
+        });
+    }
+
+    function evaluarPagos() {
+        const totalVenta = getTotalVentaNumero();
+        let sumaPagos = 0;
+        let usaCuentaCorriente = false;
+
+        document.querySelectorAll('.fila-pago').forEach(fila => {
+            const metodoVal = fila.querySelector('.pago-metodo')?.value;
+            const montoVal = parseFloat(fila.querySelector('.pago-monto')?.value) || 0;
+            sumaPagos += montoVal;
+            if (String(metodoVal) === '3') {
+                usaCuentaCorriente = true;
+            }
+        });
+
+        const restante = totalVenta - sumaPagos;
+        const restanteEl = document.getElementById('restantePago');
+        if (restanteEl) {
+            restanteEl.textContent = `$${restante.toFixed(2)}`;
+            restanteEl.classList.remove('text-warning', 'text-success', 'text-danger');
+            if (Math.abs(restante) <= 0.01) {
+                restanteEl.classList.add('text-success');
+            } else if (restante > 0) {
+                restanteEl.classList.add('text-warning');
+            } else {
+                restanteEl.classList.add('text-danger');
+            }
+        }
+
+        toggleClientesCorrientes(usaCuentaCorriente);
+    }
+
+    // ==========================================
+    // 2. BÚSQUEDA Y AGREGADO DE PRODUCTOS INDIVIDUALES
     // ==========================================
     document.getElementById('buscarProductoInput').addEventListener('input', function () {
         const termino = this.value.trim();
@@ -428,7 +535,7 @@
     });
 
     // ==========================================
-    // 2. LÓGICA DE PROMOCIONES EN VENTA
+    // 3. LÓGICA DE PROMOCIONES EN VENTA
     // ==========================================
     function filtrarPromocionesVenta() {
         const filtro = normalizarTexto(document.getElementById('inputBuscarPromoVenta').value);
@@ -442,8 +549,6 @@
         });
     }
 
-    let promoIndex = 0; // Índice único para el array promociones[]
-
     function agregarPromocionAVenta(promo) {
         if (!promo || !promo.id_promocion) return;
 
@@ -452,7 +557,6 @@
         const precioCombo = parseFloat(promo.precio) || 0;
 
         if (filaExistente) {
-            // Si ya está la promo en la tabla, aumentamos su multiplicador
             const inputCant = filaExistente.querySelector('.cantidad');
             inputCant.value = parseInt(inputCant.value) + 1;
             actualizarTotal(inputCant);
@@ -483,7 +587,6 @@
 
         calcularTotalVenta();
 
-        // Cerrar modal
         const modalElement = document.getElementById('buscarPromocionModal');
         const modalInstance = bootstrap.Modal.getInstance(modalElement);
         if (modalInstance) {
@@ -492,7 +595,7 @@
     }
 
     // ==========================================
-    // 3. OPERACIONES EN LA TABLA DE VENTAS Y CÁLCULOS
+    // 4. OPERACIONES EN LA TABLA DE VENTAS Y CÁLCULOS
     // ==========================================
     function quitarProductoDelCarrito(boton) {
         const fila = boton.closest('tr');
@@ -548,6 +651,7 @@
         }
 
         calcularVuelto();
+        evaluarPagos();
     }
 
     function calcularVuelto() {
@@ -560,13 +664,7 @@
         }
 
         const montoRecibido = parseFloat(montoRecibidoInput.value) || 0;
-
-        const totalTexto = totalVentaElement.textContent
-            .replace('$', '')
-            .trim();
-
-        const totalVenta = parseFloat(totalTexto) || 0;
-
+        const totalVenta = parseFloat(totalVentaElement.textContent.replace('$', '').trim()) || 0;
         const vuelto = montoRecibido - totalVenta;
 
         if (vuelto >= 0) {
@@ -581,11 +679,10 @@
     }
 
     // ==========================================
-    // 4. VALIDACIÓN DEL FORMULARIO DE VENTA
+    // 5. VALIDACIÓN DEL FORMULARIO DE VENTA
     // ==========================================
     document.getElementById('formVentaPrincipal').addEventListener('submit', function (e) {
         const tablaVentas = document.getElementById('tablaVentas');
-        const metodoPago = document.getElementById('metodo_pago').value;
         const idCliente = document.getElementById('id_cliente').value;
         const descuentoInput = parseFloat(document.getElementById('descuento').value) || 0;
 
@@ -623,14 +720,44 @@
             return;
         }
 
-        if (!metodoPago) {
+        const totalVenta = Math.round((subtotalProductos - descuentoEnPesos) * 100) / 100;
+        const filasPago = document.querySelectorAll('.fila-pago');
+        let sumaPagos = 0;
+        let usaCuentaCorriente = false;
+
+        for (const fila of filasPago) {
+            const metodoVal = fila.querySelector('.pago-metodo')?.value;
+            const montoVal = parseFloat(fila.querySelector('.pago-monto')?.value) || 0;
+
+            if (!metodoVal) {
+                e.preventDefault();
+                alert('¡Atención! Completá el método de pago en todas las filas.');
+                fila.querySelector('.pago-metodo').focus();
+                return;
+            }
+
+            if (montoVal <= 0) {
+                e.preventDefault();
+                alert('¡Atención! Cada método de pago debe tener un monto mayor a $0.00.');
+                fila.querySelector('.pago-monto').focus();
+                return;
+            }
+
+            sumaPagos += montoVal;
+            if (String(metodoVal) === '3') {
+                usaCuentaCorriente = true;
+            }
+        }
+
+        sumaPagos = Math.round(sumaPagos * 100) / 100;
+
+        if (Math.abs(sumaPagos - totalVenta) > 0.01) {
             e.preventDefault();
-            alert('¡Atención! Es obligatorio que selecciones un Método de pago válido para guardar el registro.');
-            document.getElementById('metodo_pago').focus();
+            alert(`¡Atención! La suma de los pagos ($${sumaPagos.toFixed(2)}) debe coincidir con el total de la venta ($${totalVenta.toFixed(2)}).`);
             return;
         }
 
-        if (metodoPago === '3' && !idCliente) {
+        if (usaCuentaCorriente && !idCliente) {
             e.preventDefault();
             alert('¡Atención! Seleccionaste la opción "Cliente Corriente". Por lo tanto, debes indicar el cliente titular de la cuenta obligatoriamente.');
             document.getElementById('id_cliente').focus();
@@ -639,24 +766,48 @@
     });
 
     // ==========================================
-    // 5. CLIENTES CORRIENTES & INICIALIZACIÓN
+    // 6. CLIENTES CORRIENTES & INICIALIZACIÓN
     // ==========================================
-    function toggleClientesCorrientes() {
-        const metodoPago = document.getElementById('metodo_pago');
+let clientesCorrientesCargados = false;
+
+    function actualizarVisibilidadCliente() {
+        const usaMetodoCtaCte = Array.from(document.querySelectorAll('.pago-metodo'))
+            .some(sel => String(sel.value) === '3');
+        const checkboxCtaCte = document.getElementById('asociar_cliente_corriente');
         const clientesCorrientesContainer = document.getElementById('clientes_corrientes_container');
         const clienteCasualContainer = document.getElementById('cliente_casual_container');
         const selectClientes = document.getElementById('id_cliente');
-        
-        if (metodoPago && metodoPago.value === '3') { 
+
+        if (usaMetodoCtaCte && checkboxCtaCte) {
+            checkboxCtaCte.checked = true;
+            checkboxCtaCte.disabled = true;
+        } else if (checkboxCtaCte) {
+            checkboxCtaCte.disabled = false;
+        }
+
+        const mostrarSelectorCliente = usaMetodoCtaCte || (checkboxCtaCte && checkboxCtaCte.checked);
+
+        if (mostrarSelectorCliente) {
             clientesCorrientesContainer.style.display = 'block';
             clienteCasualContainer.style.display = 'none';
-            selectClientes.setAttribute('required', 'required');
-            cargarClientesCorrientes();
-        } else if (clientesCorrientesContainer && clienteCasualContainer) {
+            if (!clientesCorrientesCargados) {
+                cargarClientesCorrientes();
+            }
+        } else {
             clientesCorrientesContainer.style.display = 'none';
             clienteCasualContainer.style.display = 'block';
+            selectClientes.value = '';
+        }
+
+        if (usaMetodoCtaCte) {
+            selectClientes.setAttribute('required', 'required');
+        } else {
             selectClientes.removeAttribute('required');
         }
+    }
+
+    function toggleClientesCorrientes() {
+        actualizarVisibilidadCliente();
     }
 
     function cargarClientesCorrientes() {
@@ -665,25 +816,30 @@
             .then(data => {
                 const selectClientes = document.getElementById('id_cliente');
                 selectClientes.innerHTML = '<option selected disabled value="">Seleccione un cliente</option>';
-                
+
                 data.forEach(cliente => {
                     const option = document.createElement('option');
                     option.value = cliente.id_cliente;
                     option.textContent = `${cliente.nombre_y_apellido} - DNI: ${cliente.dni}`;
                     selectClientes.appendChild(option);
                 });
+                clientesCorrientesCargados = true;
             })
             .catch(error => console.error('Error:', error));
     }
 
-    document.addEventListener('DOMContentLoaded', toggleClientesCorrientes);
+    document.addEventListener('DOMContentLoaded', function() {
+        if (document.querySelectorAll('.fila-pago').length === 0) {
+            agregarFilaPago();
+        }
+        toggleClientesCorrientes();
+    });
 </script>
 
 {{-- Carga Automática desde Presupuesto (Si Aplica) --}}
 @if(session('cargar_presupuesto') || session('cargar_promociones_presupuesto'))
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // 1. Cargar datos del cliente y descuento
             const descuentoPresupuesto = {{ session('descuento_presupuesto') ?? 0 }};
             const nombrePresupuesto = "{{ session('nombre_cliente') ?? '' }}";
             const telefonoPresupuesto = "{{ session('telefono_cliente') ?? '' }}";
@@ -701,19 +857,16 @@
             const inputDescuento = document.getElementById('descuento');
             if (inputDescuento) inputDescuento.value = descuentoPresupuesto;
 
-            // 2. Cargar Promociones en un solo renglón
             @if(session('cargar_promociones_presupuesto'))
                 const promocionesPresupuesto = @json(session('cargar_promociones_presupuesto'));
 
                 promocionesPresupuesto.forEach(promo => {
-                    // Agrega el renglón de la promoción usando la función existente
                     agregarPromocionAVenta({
                         id_promocion: promo.id_promocion,
                         nombre: promo.nombre,
                         precio: parseFloat(promo.precio)
                     });
 
-                    // Si la cantidad en el presupuesto era mayor a 1, actualizamos el input
                     if (promo.cantidad && promo.cantidad > 1) {
                         const rowId = `promo-row-${promo.id_promocion}`;
                         const fila = document.querySelector(`tr[data-row-id="${rowId}"]`);
@@ -728,7 +881,6 @@
                 });
             @endif
 
-            // 3. Cargar Productos Individuales
             @if(session('cargar_presupuesto'))
                 const productosPresupuesto = @json(session('cargar_presupuesto'));
                 const tablaVentas = document.getElementById('tablaVentas');
@@ -763,7 +915,6 @@
                 });
             @endif
 
-            // 4. Recalcular el total final
             if (typeof calcularTotalVenta === 'function') {
                 calcularTotalVenta();
             }
