@@ -12,6 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('productos', function (Blueprint $table) {
+            $table->foreign(['id_marca'], 'fk_producto_marca')->references(['id_marca'])->on('marcas')->onUpdate('cascade')->onDelete('set null');
             $table->foreign(['id_proveedor'], 'productos_ibfk_1')->references(['id_proveedor'])->on('proveedores')->onUpdate('restrict')->onDelete('restrict');
             $table->foreign(['id_categoria'], 'producxcategoria')->references(['id_categoria'])->on('categorias')->onUpdate('cascade')->onDelete('cascade');
         });
@@ -23,6 +24,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('productos', function (Blueprint $table) {
+            $table->dropForeign('fk_producto_marca');
             $table->dropForeign('productos_ibfk_1');
             $table->dropForeign('producxcategoria');
         });

@@ -11,12 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('clientes_corrientes', function (Blueprint $table) {
-            $table->bigInteger('id_cliente', true);
-            $table->string('nombre_y_apellido');
-            $table->bigInteger('DNI');
-            $table->bigInteger('telefono')->nullable();
+        Schema::create('marcas', function (Blueprint $table) {
+            $table->bigInteger('id_marca', true);
+            $table->string('nombre');
+            $table->string('descripcion')->nullable();
             $table->enum('estado', ['activo', 'desactivado'])->nullable()->default('activo');
+            $table->timestamp('created_at')->nullable()->useCurrent();
+            $table->timestamp('updated_at')->useCurrentOnUpdate()->nullable()->useCurrent();
         });
     }
 
@@ -25,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('clientes_corrientes');
+        Schema::dropIfExists('marcas');
     }
 };
