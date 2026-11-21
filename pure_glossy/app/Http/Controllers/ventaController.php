@@ -12,7 +12,6 @@ class VentaController extends Controller
     {
         $metodosDePago = DB::table('metodos_pago')->select('id_metodo_pago', 'nombre')->get();
 
-        // Obtener promociones activas con sus productos desglosados
         $promociones = DB::table('promociones')
             ->where('estado', 'activo')
             ->get();
@@ -46,7 +45,6 @@ class VentaController extends Controller
             return response()->json([]);
         }
 
-        // Base de consulta con Marcas y Categorías
         $consultaBase = DB::table('productos as p')
             ->leftJoin('marcas as m', 'p.id_marca', '=', 'm.id_marca')
             ->leftJoin('categorias as c', 'p.id_categoria', '=', 'c.id_categoria')
@@ -99,7 +97,9 @@ class VentaController extends Controller
     public function guardar(Request $request)
     {
         $request->validate([
-            'metodo_pago' => 'required|exists:metodos_pago,id_metodo_pago',
+            'pagos' => 'required|array|min:1',
+            'pagos.*.id_metodo_pago' => 'required|exists:metodos_pago,id_metodo_pago',
+            'pagos.*.monto' => 'required|numeric|min:0.01',
             'descuento' => 'nullable|numeric|min:0',
             'productos' => 'nullable|array',
             'productos.*.id_producto' => 'required|exists:productos,id_producto',
@@ -109,7 +109,7 @@ class VentaController extends Controller
             'promociones.*.id_promocion' => 'required|exists:promociones,id_promocion',
             'promociones.*.cantidad' => 'required|integer|min:1',
             'promociones.*.precio' => 'required|numeric|min:0',
-            'id_cliente' => 'required_if:metodo_pago,3|exists:clientes_corrientes,id_cliente',
+            'id_cliente' => 'nullable|exists:clientes_corrientes,id_cliente',
             'cliente_nombre' => 'nullable|string|max:255',
             'cliente_telefono' => 'nullable|string|max:50',
             'observaciones' => 'nullable|string|max:1000',
@@ -120,35 +120,91 @@ class VentaController extends Controller
             return redirect()->back()->with('error', 'Debes agregar al menos un producto o una promoción a la venta.');
         }
 
+        // Calcular monto total antes de descuento
+        $montoTotal = 0;
+        if (!empty($request->productos)) {
+            foreach ($request->productos as $p) {
+                $montoTotal += ((float) $p['precio'] * (int) $p['cantidad']);
+            }
+        }
+        if (!empty($request->promociones)) {
+            foreach ($request->promociones as $pr) {
+                $montoTotal += ((float) $pr['precio'] * (int) $pr['cantidad']);
+            }
+        }
+
+        $descuento = (float) ($request->descuento ?? 0);
+        if ($descuento > $montoTotal) {
+            return redirect()->back()->with('error', 'El descuento no puede superar el monto total de la venta.');
+        }
+
+        $montoTotal = round($montoTotal - $descuento, 2);
+
+        // Validar pagos y cuenta corriente
+        $pagos = $request->input('pagos', []);
+        $sumaPagos = 0;
+        $montoCuentaCorriente = 0;
+        $metodoPrincipal = null;
+        $mayorMontoPago = -1;
+
+        foreach ($pagos as $pago) {
+            $idMetodo = (int) $pago['id_metodo_pago'];
+            $montoPago = round((float) $pago['monto'], 2);
+
+            $sumaPagos += $montoPago;
+
+            if ($idMetodo === 3) {
+                $montoCuentaCorriente += $montoPago;
+            }
+
+            if ($montoPago > $mayorMontoPago) {
+                $mayorMontoPago = $montoPago;
+                $metodoPrincipal = $idMetodo;
+            }
+        }
+
+        $sumaPagos = round($sumaPagos, 2);
+        $montoCuentaCorriente = round($montoCuentaCorriente, 2);
+
+        if (abs($sumaPagos - $montoTotal) > 0.01) {
+            return redirect()->back()->with(
+                'error',
+                'La suma de los pagos ($' . number_format($sumaPagos, 2) . ') no coincide con el total de la venta ($' . number_format($montoTotal, 2) . ').'
+            );
+        }
+
+        if ($montoCuentaCorriente > 0) {
+            $esCombinado = count($pagos) > 1 || ($montoCuentaCorriente < $montoTotal);
+            $conceptoCta = $esCombinado
+                ? "Venta #{$idVenta} (pago parcial/combinado a cta. cte.)"
+                : "Venta #{$idVenta}";
+
+            DB::table('movimientos_cuenta_corriente')->insert([
+                'id_cliente' => $idClienteSeleccionado,
+                'id_venta'   => $idVenta,
+                'tipo'       => 'venta',
+                'concepto'   => $conceptoCta,
+                'monto'      => $montoCuentaCorriente,
+                'fecha'      => now()->format('Y-m-d H:i:s'),
+            ]);
+        }
+
         DB::beginTransaction();
 
         try {
-            $cantidadesTotales = []; // Acumulador de stock requerido por id_producto
-
-            // 1. Acumular stock de productos individuales
-            if (!empty($request->productos)) {
-                foreach ($request->productos as $p) {
-                    $id = $p['id_producto'];
-                    $cantidadesTotales[$id] = ($cantidadesTotales[$id] ?? 0) + $p['cantidad'];
-                }
-            }
-
-            // 2. Consultar productos de promos y acumular stock requerido
             $promosDesglosadas = [];
             if (!empty($request->promociones)) {
-                foreach ($request->promociones as $indexPromo => $promoItem) {
+                foreach ($request->promociones as $promoItem) {
                     $idPromo = $promoItem['id_promocion'];
                     $cantCombos = $promoItem['cantidad'];
                     $precioComboIngresado = $promoItem['precio'];
 
-                    // Traer los productos componentes de la promo
                     $itemsPromoDB = DB::table('promocion_productos as pp')
                         ->join('productos as p', 'pp.id_producto', '=', 'p.id_producto')
                         ->where('pp.id_promocion', $idPromo)
                         ->select('p.id_producto', 'p.nombre', 'p.precio_venta', 'pp.cantidad as cant_unitario')
                         ->get();
 
-                    // Calcular precio proporcional por ítem
                     $sumaPreciosLista = 0;
                     foreach ($itemsPromoDB as $ip) {
                         $sumaPreciosLista += ($ip->precio_venta * $ip->cant_unitario);
@@ -157,7 +213,6 @@ class VentaController extends Controller
 
                     foreach ($itemsPromoDB as $ip) {
                         $cantTotalItem = $ip->cant_unitario * $cantCombos;
-                        $cantidadesTotales[$ip->id_producto] = ($cantidadesTotales[$ip->id_producto] ?? 0) + $cantTotalItem;
 
                         $promosDesglosadas[] = [
                             'id_producto' => $ip->id_producto,
@@ -168,42 +223,51 @@ class VentaController extends Controller
                 }
             }
 
-            // 3. Calcular el subtotal / monto total de la venta
-            $montoTotal = 0;
-            if (!empty($request->productos)) {
-                foreach ($request->productos as $p) {
-                    $montoTotal += ($p['precio'] * $p['cantidad']);
-                }
-            }
-            if (!empty($request->promociones)) {
-                foreach ($request->promociones as $pr) {
-                    $montoTotal += ($pr['precio'] * $pr['cantidad']);
-                }
-            }
+            $tieneCuentaCorriente = ($montoCuentaCorriente > 0);
 
-            $descuento = $request->descuento ?? 0;
-            if ($descuento > $montoTotal) {
-                DB::rollBack();
-                return redirect()->back()->with('error', 'El descuento no puede superar el monto total de la venta.');
-            }
+            $idClienteSeleccionado = !empty($request->id_cliente) ? (int) $request->id_cliente : null;
 
-            $montoTotal -= $descuento;
-            $esClienteCorriente = ($request->metodo_pago == 3);
-
-            // 4. Crear la venta en la tabla `ventas`
+            // 1. Crear la venta en `ventas`
             $idVenta = DB::table('ventas')->insertGetId([
                 'id_usuario'       => Auth::id(),
-                'fecha_venta'      => now()->format('Y-m-d H:i:s'), 
+                'fecha_venta'      => now()->format('Y-m-d H:i:s'),
                 'monto_total'      => $montoTotal,
-                'id_metodo_pago'   => $request->metodo_pago,
+                'id_metodo_pago'   => $metodoPrincipal,
                 'descuento'        => $descuento,
-                'id_cliente'       => $esClienteCorriente ? $request->id_cliente : null,
-                'cliente_nombre'   => !$esClienteCorriente ? $request->cliente_nombre : null,
-                'cliente_telefono' => !$esClienteCorriente ? $request->cliente_telefono : null,
+                'id_cliente'       => $idClienteSeleccionado,
+                'cliente_nombre'   => !$idClienteSeleccionado ? $request->cliente_nombre : null,
+                'cliente_telefono' => !$idClienteSeleccionado ? $request->cliente_telefono : null,
                 'observaciones'    => $request->observaciones,
             ]);
 
-            // 5. Insertar productos individuales en `ventas_productos`
+            // 2. Registrar desglose de pagos en `ventas_pagos`
+            foreach ($pagos as $pago) {
+                DB::table('ventas_pagos')->insert([
+                    'id_venta'       => $idVenta,
+                    'id_metodo_pago' => (int) $pago['id_metodo_pago'],
+                    'monto'          => round((float) $pago['monto'], 2),
+                    'created_at'     => now(),
+                ]);
+            }
+
+            // 3. Registrar movimiento en cuenta corriente si corresponde
+            if ($tieneCuentaCorriente) {
+                $esCombinado = count($pagos) > 1 || ($montoCuentaCorriente < $montoTotal);
+                $conceptoCta = $esCombinado
+                    ? "Venta #{$idVenta} (pago parcial/combinado a cta. cte.)"
+                    : "Venta #{$idVenta}";
+
+                DB::table('movimientos_cuenta_corriente')->insert([
+                    'id_cliente' => $request->id_cliente,
+                    'id_venta'   => $idVenta,
+                    'tipo'       => 'venta',
+                    'concepto'   => $conceptoCta,
+                    'monto'      => $montoCuentaCorriente,
+                    'fecha'      => now()->format('Y-m-d H:i:s'),
+                ]);
+            }
+
+            // 4. Insertar productos individuales en `ventas_productos` y descontar stock
             if (!empty($request->productos)) {
                 foreach ($request->productos as $p) {
                     $precioListaDB = DB::table('productos')->where('id_producto', $p['id_producto'])->value('precio_lista');
@@ -220,7 +284,7 @@ class VentaController extends Controller
                 }
             }
 
-            // 6. Insertar productos desglosados de las promociones en `ventas_productos`
+            // 5. Insertar productos desglosados de promociones en `ventas_productos` y descontar stock
             foreach ($promosDesglosadas as $itemDesglosado) {
                 $precioListaDB = DB::table('productos')->where('id_producto', $itemDesglosado['id_producto'])->value('precio_lista');
 

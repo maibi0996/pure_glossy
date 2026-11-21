@@ -117,12 +117,40 @@ class ClienteController extends Controller
             return response()->json(['error' => 'Cliente no encontrado'], 404);
         }
 
+        // 1. Movimientos reales de cuenta corriente (deudas, pagos, ajustes)
         $movimientos = DB::table('movimientos_cuenta_corriente')
             ->where('id_cliente', $id_cliente)
-            ->orderByDesc('fecha')
-            ->orderByDesc('id_movimiento')
             ->get();
 
+        // 2. Ventas vinculadas a este cliente que fueron pagadas al 100% (no están en movimientos_cuenta_corriente)
+        $ventasContado = DB::table('ventas as v')
+            ->leftJoin('ventas_anuladas as va', 'v.id_venta', '=', 'va.id_venta')
+            ->leftJoin('movimientos_cuenta_corriente as m', function ($join) {
+                $join->on('v.id_venta', '=', 'm.id_venta')
+                    ->where('m.tipo', '=', 'venta');
+            })
+            ->where('v.id_cliente', $id_cliente)
+            ->whereNull('va.id_venta')
+            ->whereNull('m.id_movimiento')
+            ->select(
+                DB::raw('NULL as id_movimiento'),
+                'v.id_cliente',
+                'v.id_venta',
+                DB::raw("'compra_contado' as tipo"),
+                DB::raw("CONCAT('Venta #', v.id_venta, ' (Pagada al contado - $', FORMAT(v.monto_total, 2), ')') as concepto"),
+                DB::raw('0.00 as monto'),
+                'v.fecha_venta as fecha'
+            )
+            ->get();
+
+        // 3. Combinar y ordenar por fecha descendente
+        $todosLosMovimientos = $movimientos->concat($ventasContado)
+            ->sortByDesc(function ($item) {
+                return $item->fecha . '-' . str_pad((string) ($item->id_movimiento ?? 0), 10, '0', STR_PAD_LEFT);
+            })
+            ->values();
+
+        // 4. Calcular saldo (solo afecta tipo 'venta', 'pago' y 'ajuste'; 'compra_contado' suma 0)
         $saldo = 0;
         foreach ($movimientos as $mov) {
             if ($mov->tipo === 'venta') {
@@ -142,7 +170,7 @@ class ClienteController extends Controller
             'cliente'     => $cliente,
             'saldo'       => round($saldo, 2),
             'estado_cta'  => $saldo > 0 ? 'Con saldo pendiente' : 'Al día',
-            'movimientos' => $movimientos,
+            'movimientos' => $todosLosMovimientos,
         ]);
     }
 

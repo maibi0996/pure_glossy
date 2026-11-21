@@ -18,7 +18,7 @@
                                 <th>fecha venta (A-M-D)</th>
                                 <th>monto con descuento</th>
                                 <th>descuento</th>
-                                <th>metodo de pago</th>
+                                <th>métodos de pago</th>
                                 <th>Cliente</th>
                                 <th class="text-center">Acciones</th>
                             </tr>
@@ -31,7 +31,18 @@
                                 <td>{{ $venta->fecha_venta }}</td>
                                 <td>${{ number_format($venta->monto_total, 2) }}</td>
                                 <td>${{ number_format($venta->descuento, 2) }}</td>
-                                <td>{{ $venta->metodo_pago }}</td>
+                                <td>
+                                    @if(isset($venta->pagos) && $venta->pagos->count() > 1)
+                                        @foreach($venta->pagos as $pago)
+                                            <div>
+                                                <span class="badge bg-secondary">{{ $pago->metodo }}</span>
+                                                <small class="text-info fw-bold">${{ number_format($pago->monto, 2) }}</small>
+                                            </div>
+                                        @endforeach
+                                    @else
+                                        {{ $venta->pagos->first()->metodo ?? $venta->metodo_pago }}
+                                    @endif
+                                </td>
                                 <td>
                                 @if($venta->clientec)
                                     <span class="badge bg-info text-dark">Cta Cte</span> {{ $venta->nombre_clientec }}
@@ -161,11 +172,12 @@
                     </div>
                 </div>
 
+                {{-- PRODUCTOS VENDIDOS --}}
                 <div class="card mb-3 flex-grow-1 left-table position-relative bg-dark text-white border-secondary">
                     <div class="card-body d-flex flex-column">
                         <h5 class="card-title">Productos vendidos</h5>
                         <div class="table-responsive flex-grow-1">
-                            <table class="table table-dark table-striped align-middle mb-0">
+                            <table id="tablaDetalleProductos" class="table table-dark table-striped align-middle mb-0">
                                 <thead>
                                     <tr>
                                         <th>ID</th>
@@ -175,6 +187,26 @@
                                         <th class="text-center">Cant.</th>
                                         <th class="text-end">Precio Unit.</th>
                                         <th class="text-end">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {{-- Cargado vía AJAX --}}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- DESGLOSE DE MÉTODOS DE PAGO --}}
+                <div class="card mb-3 bg-dark text-white border-secondary">
+                    <div class="card-body">
+                        <h6 class="fw-bold text-info mb-2"><i class="fas fa-credit-card me-2"></i>Métodos de Pago</h6>
+                        <div class="table-responsive">
+                            <table id="tablaDetallePagos" class="table table-dark table-sm table-striped align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Método de Pago</th>
+                                        <th class="text-end">Monto</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -255,10 +287,13 @@
                 fetch(`/detalle-venta/${idVenta}`)
                     .then(response => response.json())
                     .then(data => {
-                        const tbody = document.querySelector('#verdetalleventa table tbody');
-                        tbody.innerHTML = '';
+                        const productos = Array.isArray(data) ? data : (data.productos || []);
+                        const pagos = Array.isArray(data) ? [] : (data.pagos || []);
 
-                        data.forEach(item => {
+                        const tbodyProductos = document.querySelector('#tablaDetalleProductos tbody');
+                        tbodyProductos.innerHTML = '';
+
+                        productos.forEach(item => {
                             const marcaBadge = item.marca ? `<span class="badge bg-info text-dark">${item.marca}</span>` : '<span class="text-white-50 small">-</span>';
                             const catBadge = item.categoria ? `<span class="badge bg-secondary">${item.categoria}</span>` : '<span class="text-white-50 small">-</span>';
                             const subtotal = (parseFloat(item.precio) * parseInt(item.cantidad)).toFixed(2);
@@ -274,8 +309,25 @@
                                     <td class="text-end text-success fw-bold">$${subtotal}</td>
                                 </tr>
                             `;
-                            tbody.innerHTML += row;
+                            tbodyProductos.innerHTML += row;
                         });
+
+                        const tbodyPagos = document.querySelector('#tablaDetallePagos tbody');
+                        tbodyPagos.innerHTML = '';
+
+                        if (pagos.length > 0) {
+                            pagos.forEach(pago => {
+                                const rowPago = `
+                                    <tr>
+                                        <td><span class="badge bg-secondary">${pago.metodo}</span></td>
+                                        <td class="text-end text-success fw-bold">$${parseFloat(pago.monto).toFixed(2)}</td>
+                                    </tr>
+                                `;
+                                tbodyPagos.innerHTML += rowPago;
+                            });
+                        } else {
+                            tbodyPagos.innerHTML = `<tr><td colspan="2" class="text-center text-muted">Sin información de pagos</td></tr>`;
+                        }
                     })
                     .catch(error => console.error('Error al cargar detalle:', error));
             });
