@@ -533,3 +533,123 @@ label,
         border-color: #cccccc !important;
     }
 }
+
+
+/* UNIFICACIÓN VISUAL PURE GLOSSY */
+
+.btn-primary,
+.btn-success,
+.btn-secondary,
+.btn-danger,
+.btn-warning {
+    background-color: #F38ECA !important;
+    border-color: #E879B8 !important;
+    color: #70405D !important;
+}
+
+.btn-primary:hover,
+.btn-success:hover,
+.btn-secondary:hover,
+.btn-danger:hover,
+.btn-warning:hover {
+    background-color: #E879B8 !important;
+    border-color: #D98BB8 !important;
+    color: #70405D !important;
+}
+
+.btn-outline-primary,
+.btn-outline-secondary,
+.btn-outline-danger,
+.btn-outline-success {
+    color: #70405D !important;
+    border-color: #E879B8 !important;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-secondary:hover,
+.btn-outline-danger:hover,
+.btn-outline-success:hover {
+    background-color: #F38ECA !important;
+    color: #70405D !important;
+}
+
+.form-control:focus,
+.form-select:focus,
+.styled-select:focus {
+    background-color: #FFF9FC !important;
+    border-color: #E879B8 !important;
+    color: #70405D !important;
+    box-shadow: 0 0 0 0.2rem rgba(243, 142, 202, 0.20) !important;
+}
+
+.styled-select {
+    background-color: #FFF9FC !important;
+    border-color: #F3B5D8 !important;
+    color: #70405D !important;
+}
+
+.modal-content {
+    background-color: #FFF9FC;
+    color: #70405D;
+    border: 1px solid #F3B5D8;
+    border-radius: 12px;
+}
+
+.modal-header,
+.modal-footer {
+    border-color: #F3B5D8;
+}
+
+.card {
+    background-color: #FFF9FC;
+    border-color: #F3B5D8;
+    color: #70405D;
+}
+
+/* Ajustes visuales - Vista Usuarios */
+
+.badge.rounded-pill {
+    background-color: #F8D5E9 !important;
+    color: #70405D !important;
+    border: 1px solid #F3B5D8;
+    font-weight: bold;
+}
+
+.btn-info {
+    background-color: #FCE7F3 !important;
+    border-color: #F3B5D8 !important;
+    color: #70405D !important;
+}
+
+.btn-info:hover {
+    background-color: #F38ECA !important;
+    border-color: #E879B8 !important;
+    color: #70405D !important;
+}
+
+/* Botones de los modales de Usuarios */
+
+#veragregarusuario .modal-footer .btn,
+#vermodificarusuario .modal-footer .btn {
+    background-color: #F38ECA !important;
+    border: 1px solid #E879B8 !important;
+    color: #70405D !important;
+}
+
+#veragregarusuario .modal-footer .btn:hover,
+#vermodificarusuario .modal-footer .btn:hover {
+    background-color: #E879B8 !important;
+    color: #70405D !important;
+}
+
+/* Etiquetas de roles: tamaño uniforme */
+
+.badge.rounded-pill {
+    display: inline-block;
+    width: 130px;
+    text-align: center;
+    padding: 5px 8px;
+    font-size: 13px;
+    border-radius: 20px !important;
+    white-space: nowrap;
+}

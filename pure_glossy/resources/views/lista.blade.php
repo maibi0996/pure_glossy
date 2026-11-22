@@ -41,37 +41,43 @@
 <div class="row h-100">
     <div class="col-lg-8 d-flex flex-column">
         {{-- BÚSQUEDA Y BOTONES DE ACCIÓN RÁPIDA --}}
-        <form id="formBusquedaProductos" action="{{ route('views.lista') }}" method="GET" class="row g-2 mb-3">
-            <div class="col-12 col-md-4">
-                <input type="search" id="inputSearchProductos" name="search" class="form-control" placeholder="Busque su producto" value="{{ $search }}">
-            </div>
-            <div class="col-6 col-md-2">
-                <button type="submit" class="btn btn-primary w-100">Buscar</button>
-            </div>
-            @if(Auth::check() && Auth::user()->rol === 'administrador')
-                <div class="col-6 col-md-2">
-                    <button type="button" class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#agregarModal">
-                        <i class="fas fa-plus me-1"></i> Producto
-                    </button>
-                </div>
-                <div class="col-4 col-md-2">
-                    <button type="button" class="btn btn-secondary w-100 h-100" data-bs-toggle="modal" data-bs-target="#gestionarMarcasModal">
-                        <i class="fas fa-tag me-1"></i> Marcas
-                    </button>
-                </div>
-                <div class="col-4 col-md-1">
-                    <button type="button" class="btn btn-secondary w-100 h-100 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#gestionarCategoriasModal" title="Categorías">
-                        <i class="fas fa-list"></i>
-                    </button>
-                </div>
-                <div class="col-4 col-md-1">
-                    <button type="button" class="btn btn-secondary w-100 h-100 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#gestionarEtiquetasModal" title="Etiquetas">
-                        <i class="fas fa-tags"></i>
-                    </button>
-                </div>
-                
-            @endif
-        </form>
+        
+<form id="formBusquedaProductos" action="{{ route('views.lista') }}" method="GET" class="row g-2 mb-3 align-items-stretch">
+    <div class="col-12 col-md-4">
+        <input type="search" id="inputSearchProductos" name="search" class="form-control h-100" placeholder="Busque su producto" value="{{ $search }}">
+    </div>
+
+    <div class="col-6 col-md-2">
+        <button type="submit" class="btn btn-primary w-100 h-100">Buscar</button>
+    </div>
+
+    @if(Auth::check() && Auth::user()->rol === 'administrador')
+        <div class="col-6 col-md-2">
+            <button type="button" class="btn btn-primary w-100 h-100" data-bs-toggle="modal" data-bs-target="#agregarModal">
+                <i class="fas fa-plus me-1"></i> Producto
+            </button>
+        </div>
+
+        <div class="col-4 col-md-2">
+            <button type="button" class="btn btn-primary w-100 h-100" data-bs-toggle="modal" data-bs-target="#gestionarMarcasModal">
+                <i class="fas fa-tag me-1"></i> Marcas
+            </button>
+        </div>
+
+        <div class="col-4 col-md-1">
+            <button type="button" class="btn btn-primary w-100 h-100 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#gestionarCategoriasModal" title="Categorías">
+                <i class="fas fa-list"></i>
+            </button>
+        </div>
+
+        <div class="col-4 col-md-1">
+            <button type="button" class="btn btn-primary w-100 h-100 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#gestionarEtiquetasModal" title="Etiquetas">
+                <i class="fas fa-tags"></i>
+            </button>
+        </div>
+    @endif
+</form>
+
 
         @if($productos->isEmpty())
             <div class="alert alert-info" role="alert">
@@ -139,13 +145,13 @@
                                     @endif
                                     <td>{{ $producto->precio_venta }}</td>
                                     <td>{{ $producto->stock }}</td>
-                                    <td><span class="badge bg-info text-dark">{{ $producto->nombre_marca }}</span></td>
-                                    <td><span class="badge bg-secondary">{{ $producto->categoria }}</span></td>
+                                    <td><span class="badge" style="background-color: #F8D5E9; color: #70405D;">{{ $producto->nombre_marca }}</span></td>
+                                    <td><span class="badge" style="background-color: #F8D5E9; color: #70405D;">{{ $producto->categoria }}</span></td>
                                     <td>
                                         @if(!empty($producto->etiquetas))
                                             <div class="d-flex flex-wrap gap-1">
                                                 @foreach($producto->etiquetas as $etiquetaNombre)
-                                                    <span class="badge bg-light text-dark border">{{ $etiquetaNombre }}</span>
+                                                    <span class="badge" style="background-color: #FCE7F3; color: #70405D;">{{ $etiquetaNombre }}</span>
                                                 @endforeach
                                             </div>
                                         @else
@@ -156,7 +162,11 @@
                                         {{ !empty($producto->fecha_vencimiento) ? \Carbon\Carbon::parse($producto->fecha_vencimiento)->format('d/m/Y') : '-' }}
                                     </td>
                                     <td>{{ $producto->nombre_proveedor }}</td>
-                                    <td>{{ $producto->estado }}</td>
+                                    <td>
+                                        <span class="badge badge-pure-glossy">
+                                            {{ $producto->estado }}
+                                        </span>
+                                    </td>
                                     
                                     @if(Auth::check() && Auth::user()->rol === 'administrador')
                                     <td class="text-center">
@@ -537,7 +547,7 @@
                                 <td><span class="badge {{ $m->estado == 'activo' ? 'bg-success' : 'bg-danger' }}">{{ $m->estado }}</span></td>
                                 <td class="text-center">
                                     <div class="d-flex justify-content-center gap-1">
-                                        <button type="button" class="btn btn-primary btn-sm"
+                                        class="btn btn-sm" style="background-color: #F38ECA; color: #70405D; border: none;"
                                             data-id="{{ $m->id_marca }}"
                                             data-nombre="{{ $m->nombre }}"
                                             data-descripcion="{{ $m->descripcion ?? '' }}"
@@ -630,7 +640,7 @@
                                     <form class="m-0 d-inline" action="{{ route('categorias.borrar', ['id_categoria' => $c->id_categoria]) }}" method="POST" onsubmit="return confirm('¿Eliminar esta categoría?')">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+                                        <button type="submit" class="btn btn-sm" style="background-color: #FCE7F3; color: #70405D; border: 1px solid #F38ECA;">Eliminar</button>
                                     </form>
                                 </div>
                             </td>
