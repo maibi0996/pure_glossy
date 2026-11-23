@@ -653,3 +653,35 @@ label,
     border-radius: 20px !important;
     white-space: nowrap;
 }
+
+/* Formulario de búsqueda: no se comprime ni estira de más */
+#formBusquedaProductos {
+    flex-shrink: 0;
+    align-content: flex-start;
+}
+
+#formBusquedaProductos .form-control,
+#formBusquedaProductos .btn {
+    height: auto !important;
+    min-height: 42px;
+}
+
+/* Los alert dentro de la columna flex no se comprimen */
+.col-lg-8.d-flex > .alert,
+.col-lg-8.d-flex > .card {
+    flex-shrink: 0;
+}
+
+/* Columna derecha: altura fija solo en escritorio */
+@media (max-width: 991.98px) {
+    .right-column {
+        height: auto;
+    }
+    .right-top,
+    .right-bottom {
+        flex: none;
+    }
+    .main-content .row.h-100 {
+        height: auto !important;
+    }
+}

@@ -19,12 +19,12 @@ class proveedorescontroller extends Controller
     {
         // Validación de datos
         $request->validate([
-            'nombre' => 'required|string|max:255',
-            'telefono' => 'nullable|int',
-            'direccion' => 'required|string|max:255',
-            'email' => 'required|string|max:255',
+            'nombre'          => 'required|string|max:255',
+            'telefono'        => 'required|string|max:20',
+            'direccion'       => 'required|string|max:255',
+            'email'           => 'required|email|max:255',
             'nom_preventista' => 'required|string|max:255',
-            'num_preventista' => 'required|int|numeric:15',
+            'num_preventista' => 'required|string|max:20',
         ]);
 
         DB::table('proveedores')->insert([
@@ -46,11 +46,11 @@ class proveedorescontroller extends Controller
         $request->validate([
             'modal_id_proveedor' => 'required|exists:proveedores,id_proveedor|int', // Asegúrate de que el id exista
             'modal_nombre' => 'required|string|max:255',
-            'modal_telefono' => 'required|int',
+            'modal_telefono' => 'required|string|max:20',
             'modal_direccion' => 'required|string|max:255',
-            'modal_email' => 'required|string|max:255',
+            'modal_email' => 'required|email|max:255',
             'modal_nom_preventista' => 'required|string|max:255',
-            'modal_num_preventista' => 'required|int|numeric:15',
+            'modal_num_preventista' => 'required|string|max:20',
             'modal_estado' => 'required|string|max:255',
         ]);
 

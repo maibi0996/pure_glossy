@@ -3,6 +3,23 @@
 @section('title', 'Proveedores')
 
 @section('ladoizq')
+
+@if ($errors->any())
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @foreach ($errors->all() as $error)
+            <p class="mb-0 fw-bold">{{ $error }}</p>
+        @endforeach
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+
+@if (session('success'))
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <div class="fw-bold">{{ session('success') }}</div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+
 <div class="row h-100">
     <div class="col-lg-8 d-flex flex-column">
         <div class="card mb-3 flex-grow-1 left-table border-secondary">

@@ -38,11 +38,11 @@
         </div>
     @endif
 
-<div class="row h-100">
-    <div class="col-lg-8 d-flex flex-column">
+<div class="row">
+    <div class="col-lg-8">
         {{-- BÚSQUEDA Y BOTONES DE ACCIÓN RÁPIDA --}}
         
-<form id="formBusquedaProductos" action="{{ route('views.lista') }}" method="GET" class="row g-2 mb-3 align-items-stretch">
+<form id="formBusquedaProductos" action="{{ route('views.lista') }}" method="GET" class="row g-2 mb-3 align-items-stretch align-content-start flex-shrink-0">
     <div class="col-12 col-md-4">
         <input type="search" id="inputSearchProductos" name="search" class="form-control h-100" placeholder="Busque su producto" value="{{ $search }}">
     </div>
