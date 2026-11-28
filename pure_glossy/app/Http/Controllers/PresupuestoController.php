@@ -12,7 +12,7 @@ class PresupuestoController extends Controller
     public function mostrar() 
     {
         $productos = DB::table('productos')
-            ->join('proveedores', 'productos.id_proveedor', '=', 'proveedores.id_proveedor')
+            ->leftJoin('proveedores', 'productos.id_proveedor', '=', 'proveedores.id_proveedor')
             ->select('productos.*', 'proveedores.nombre as nombre_proveedor')
             ->where('productos.estado', 'activo')
             ->orderBy('productos.nombre', 'asc')
@@ -32,7 +32,7 @@ class PresupuestoController extends Controller
         }
 
         $local = [
-            'nombre'    => 'Soluciones Eléctricas',
+            'nombre'    => 'Pure Glossy',
             'telefono'  => '3705033180',
             'direccion' => 'AV. Cabral 586 - Formosa Capital',
             'facebook'  => 'Soluciones Eléctricas',

@@ -99,7 +99,7 @@ class VentaController extends Controller
         $request->validate([
             'pagos' => 'required|array|min:1',
             'pagos.*.id_metodo_pago' => 'required|exists:metodos_pago,id_metodo_pago',
-            'pagos.*.monto' => 'required|numeric|min:0.01',
+            'pagos.*.monto' => 'required|numeric|min:0',
             'descuento' => 'nullable|numeric|min:0',
             'productos' => 'nullable|array',
             'productos.*.id_producto' => 'required|exists:productos,id_producto',
@@ -173,20 +173,8 @@ class VentaController extends Controller
             );
         }
 
-        if ($montoCuentaCorriente > 0) {
-            $esCombinado = count($pagos) > 1 || ($montoCuentaCorriente < $montoTotal);
-            $conceptoCta = $esCombinado
-                ? "Venta #{$idVenta} (pago parcial/combinado a cta. cte.)"
-                : "Venta #{$idVenta}";
-
-            DB::table('movimientos_cuenta_corriente')->insert([
-                'id_cliente' => $idClienteSeleccionado,
-                'id_venta'   => $idVenta,
-                'tipo'       => 'venta',
-                'concepto'   => $conceptoCta,
-                'monto'      => $montoCuentaCorriente,
-                'fecha'      => now()->format('Y-m-d H:i:s'),
-            ]);
+        if ($montoCuentaCorriente > 0 && empty($request->id_cliente)) {
+            return redirect()->back()->with('error', 'Seleccionaste pago a Cuenta Corriente. Debes elegir el cliente titular.');
         }
 
         DB::beginTransaction();
@@ -258,7 +246,7 @@ class VentaController extends Controller
                     : "Venta #{$idVenta}";
 
                 DB::table('movimientos_cuenta_corriente')->insert([
-                    'id_cliente' => $request->id_cliente,
+                    'id_cliente' => $idClienteSeleccionado,
                     'id_venta'   => $idVenta,
                     'tipo'       => 'venta',
                     'concepto'   => $conceptoCta,
@@ -305,7 +293,7 @@ class VentaController extends Controller
                 ->with('success', 'Venta guardada con éxito')
                 ->with('nueva_venta_id', $idVenta);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'No se pudo guardar la venta: ' . $e->getMessage());
         }

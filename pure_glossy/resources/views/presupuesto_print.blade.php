@@ -2,174 +2,438 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Presupuesto</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Presupuesto #{{ $presupuesto->id_presupuesto }}</title>
+
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; font-size: 13px; color: #222; background: #fff; padding: 30px; }
-        
-        /* Contenedor X (Integrado en el layout del header) */
-        .contenedor-x {
-            width: 70px; height: 70px; border: 2px solid #000;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: #fff; margin: 0 20px;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        .x-grande { font-size: 40px; font-weight: bold; line-height: 1; }
-        .leyenda-x { font-size: 7px; font-weight: bold; text-transform: uppercase; text-align: center; line-height: 1; margin-top: 2px; }
 
-        .ticket { position: relative; max-width: 800px; margin: 0 auto; border: 1px solid #ccc; padding: 30px; }
+        body {
+            background: #FFF0F8;
+            color: #70405D;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            padding: 25px 12px;
+        }
 
-        .no-print { margin-bottom: 20px; display: flex; gap: 10px; }
-        .btn { padding: 8px 18px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; }
-        .btn-volver { background: #6c757d; color: #fff; }
-        .btn-imprimir { background: #0d6efd; color: #fff; }
+        .no-print {
+            max-width: 380px;
+            margin: 0 auto 15px;
+            display: flex;
+            gap: 10px;
+        }
 
-        /* Header estructurado con Flexbox */
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .header-izq { flex: 1; }
-        .header-der { flex: 1; text-align: right; }
-        
-        .header-izq h1 { font-size: 22px; font-weight: bold; margin-bottom: 5px; }
-        .logo { width: 100px; height: auto; margin-bottom: 8px; }
-        .datos-local { font-size: 12px; line-height: 1.5; color: #444; }
+        .btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #F38ECA;
+            font-family: inherit;
+            font-size: 12px;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+        }
 
-        hr { border: none; border-top: 1px solid #ccc; margin: 16px 0; }
-        
-        .datos-cliente { display: flex; justify-content: flex-end; margin-bottom: 16px; }
-        .datos-cliente table td { padding: 2px 8px; font-size: 13px; }
-        .datos-cliente table td:first-child { font-weight: bold; text-align: right; }
+        .btn-volver {
+            background: #FFF9FC;
+            color: #70405D;
+        }
 
-        .tabla-productos { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .tabla-productos thead tr { background: #333; color: #fff; }
-        .tabla-productos th, .tabla-productos td { padding: 7px 10px; text-align: left; border-bottom: 1px solid #ddd; }
-        .tabla-productos th:last-child, .tabla-productos td:last-child { text-align: right; }
-        .tabla-productos tbody tr:nth-child(even) { background: #f9f9f9; }
+        .btn-imprimir {
+            background: #F38ECA;
+            color: #70405D;
+            font-weight: bold;
+        }
 
-        .totales { display: flex; justify-content: flex-end; }
-        .totales table { min-width: 260px; }
-        .fila-total td { font-size: 18px; font-weight: bold; border-top: 2px solid #333; padding-top: 10px; }
-        .fila-total td:last-child { color: #c0392b; }
+        .ticket {
+            width: 100%;
+            max-width: 380px;
+            margin: auto;
+            padding: 24px 19px;
+            background: #FFFFFF;
+            border-radius: 10px;
+            box-shadow: 0 4px 18px rgba(112, 64, 93, .10);
+        }
 
-        .avisos { margin-top: 24px; font-size: 12px; color: #555; border-top: 1px solid #ddd; padding-top: 12px; }
-        .footer { text-align: center; margin-top: 24px; font-size: 11px; color: #888; }
+        .logo-container {
+            text-align: center;
+            margin-bottom: 14px;
+        }
+
+        .logo {
+            width: 150px;
+            max-width: 75%;
+            height: auto;
+            display: inline-block;
+            border-radius: 8px;
+        }
+
+        .redes {
+            background: #FFF0F8;
+            border-radius: 7px;
+            padding: 10px 7px;
+            text-align: center;
+            font-size: 10px;
+            line-height: 1.8;
+            overflow-wrap: anywhere;
+        }
+
+        .separador {
+            border: none;
+            border-top: 1px dashed #C783AA;
+            margin: 15px 0;
+        }
+
+        .aviso {
+            background: #FFF0F8;
+            border-radius: 7px;
+            padding: 11px 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            text-align: center;
+        }
+
+        .aviso-x {
+            font-size: 38px;
+            font-weight: bold;
+            line-height: 1;
+            color: #70405D;
+            padding: 0 10px;
+        }
+
+        .aviso-texto {
+            font-size: 10.5px;
+            font-weight: bold;
+            line-height: 1.6;
+            letter-spacing: .4px;
+            border-left: 1px solid #C783AA;
+            padding-left: 12px;
+        }
+
+        .comprobante {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+        }
+
+        .comprobante strong {
+            font-size: 12px;
+        }
+
+        .fecha {
+            text-align: right;
+            line-height: 1.7;
+            font-size: 10.5px;
+        }
+
+        .datos-cliente {
+            font-size: 11px;
+            line-height: 1.85;
+            overflow-wrap: anywhere;
+        }
+
+        .seccion-titulo {
+            background: #FCE0EF;
+            color: #70405D;
+            font-weight: bold;
+            font-size: 10px;
+            letter-spacing: .5px;
+            padding: 6px 8px;
+            border-radius: 6px;
+            margin: 12px 0 8px;
+            text-transform: uppercase;
+        }
+
+        .tabla-productos {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+            table-layout: fixed;
+            margin-bottom: 10px;
+        }
+
+        .tabla-productos th {
+            background: #F38ECA;
+            color: #FFFFFF;
+            padding: 8px 3px;
+            text-align: center;
+            font-size: 9px;
+            overflow-wrap: anywhere;
+        }
+
+        .tabla-productos th:first-child {
+            border-radius: 7px 0 0 7px;
+        }
+
+        .tabla-productos th:last-child {
+            border-radius: 0 7px 7px 0;
+        }
+
+        .tabla-productos td {
+            padding: 8px 3px;
+            border-bottom: 1px solid #F8D9EA;
+            text-align: center;
+            overflow-wrap: anywhere;
+        }
+
+        .tabla-productos tbody tr:nth-child(even) {
+            background: #FFF0F8;
+        }
+
+        .tabla-productos td:nth-child(2) {
+            text-align: left;
+        }
+
+        .observaciones-box {
+            background: #FFF0F8;
+            border: 1px dashed #C783AA;
+            border-radius: 7px;
+            padding: 9px 10px;
+            margin-top: 12px;
+            font-size: 10.5px;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
+        }
+
+        .observaciones-box p {
+            margin-top: 4px;
+            white-space: pre-line;
+        }
+
+        .totales {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .totales table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .totales td {
+            padding: 6px 5px;
+            font-size: 11px;
+        }
+
+        .totales td:first-child {
+            text-align: left;
+        }
+
+        .totales td:last-child {
+            text-align: right;
+        }
+
+        .fila-total td {
+            background: #FCE0EF;
+            color: #70405D;
+            font-weight: bold;
+            font-size: 14px;
+            padding: 11px 9px;
+        }
+
+        .fila-total td:first-child {
+            border-radius: 7px 0 0 7px;
+        }
+
+        .fila-total td:last-child {
+            border-radius: 0 7px 7px 0;
+        }
+
+        .avisos {
+            background: #FFF0F8;
+            border-radius: 7px;
+            padding: 9px 10px;
+            margin-top: 14px;
+            font-size: 10px;
+            line-height: 1.6;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 18px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #B52F72;
+            overflow-wrap: anywhere;
+        }
 
         @media print {
-            .no-print { display: none !important; }
-            .ticket { border: none; padding: 10px; }
+            @page {
+                size: 80mm auto;
+                margin: 3mm;
+            }
+
+            body {
+                background: #FFFFFF;
+                padding: 0;
+                font-size: 11px;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .ticket {
+                width: 100%;
+                max-width: none;
+                padding: 8px 3px;
+                border-radius: 0;
+                box-shadow: none;
+            }
+
+            .tabla-productos thead tr,
+            .seccion-titulo,
+            .observaciones-box,
+            .avisos,
+            .aviso,
+            .redes,
+            .fila-total td {
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
         }
     </style>
 </head>
-
 <body>
 
     <div class="no-print">
-        <button class="btn btn-volver" onclick="history.back()">← Volver</button>
-        <button class="btn btn-imprimir" onclick="window.print()">Imprimir presupuesto</button>
+        <button type="button" class="btn btn-volver" onclick="history.back()">
+            ← Volver
+        </button>
+
+        <button type="button" class="btn btn-imprimir" onclick="window.print()">
+            Imprimir presupuesto
+        </button>
     </div>
 
     <div class="ticket">
-        <div class="header">
-            <div class="header-izq">
-                <h1>{{ $local['nombre'] }}</h1>
-                <img src="{{ asset('logo_se.jpeg')  }}" alt="Logo Empresa" class="logo">
-                <div class="datos-local">
-                    <div>Facebook: {{ $local['facebook'] }}</div>
-                    <div>Instagram: {{ $local['instagram'] }}</div>
-                    <div>Teléfono: {{ $local['telefono'] }}</div>
-                    <div>{{ $local['direccion'] }}</div>
-                </div>
-            </div>
 
-            <div class="contenedor-x">
-                <div class="x-grande">X</div>
-                <div class="leyenda-x">TICKET NO VÁLIDO<br>COMO FACTURA</div>
-            </div>
+        <!-- LOGO -->
+        <div class="logo-container">
+            <img src="{{ asset('logo_se.jpeg') }}" alt="Logo Empresa" class="logo">
+        </div>
 
-            <div class="header-der">
-                <div>Fecha: {{ \Carbon\Carbon::parse($presupuesto->fecha)->format('d/m/Y H:i') }}</div>
-                <div style="font-weight:bold; font-size:14px;">PRESUPUESTO</div>
+        <!-- DATOS DEL LOCAL -->
+        <div class="redes">
+            <div><strong>{{ $local['nombre'] }}</strong></div>
+            @if(!empty($local['facebook']))
+                <div>Facebook: {{ $local['facebook'] }}</div>
+            @endif
+            @if(!empty($local['instagram']))
+                <div>Instagram: {{ $local['instagram'] }}</div>
+            @endif
+            @if(!empty($local['telefono']))
+                <div>Teléfono: {{ $local['telefono'] }}</div>
+            @endif
+            @if(!empty($local['direccion']))
+                <div>{{ $local['direccion'] }}</div>
+            @endif
+        </div>
+
+        <hr class="separador">
+
+        <!-- AVISO -->
+        <div class="aviso">
+            <div class="aviso-x">X</div>
+            <div class="aviso-texto">
+                PRESUPUESTO
+                <br>
+                NO VÁLIDO COMO FACTURA
             </div>
         </div>
 
-        <hr>
+        <hr class="separador">
 
+        <!-- COMPROBANTE Y FECHA -->
+        <div class="comprobante">
+            <strong>
+                Presupuesto N° {{ str_pad($presupuesto->id_presupuesto, 8, '0', STR_PAD_LEFT) }}
+            </strong>
+
+            <div class="fecha">
+                Fecha: {{ \Carbon\Carbon::parse($presupuesto->fecha)->format('d/m/Y') }}
+                <br>
+                Hora: {{ \Carbon\Carbon::parse($presupuesto->fecha)->format('H:i') }}
+            </div>
+        </div>
+
+        <hr class="separador">
+
+        <!-- DATOS DEL CLIENTE Y TÍTULO -->
         <div class="datos-cliente">
-            <table>
-                @if (!empty($presupuesto->titulo))
-                    <tr>
-                        <td colspan="2" style="padding-bottom: 5px;">
-                            <strong>Título / Obra:</strong> {{ $presupuesto->titulo }}
-                        </td>
-                    </tr>
-                @endif
-                <tr>
-                    <td>Cliente: {{ $presupuesto->nombre_cliente ?: 'Consumidor final' }}</td>
-                </tr>
-                <tr>
-                    <td>Teléfono: {{ $presupuesto->telefono_cliente ?: '-' }}</td>
-                </tr>
-            </table>
+            @if (!empty($presupuesto->titulo))
+                <div><strong>Título / Obra:</strong> {{ $presupuesto->titulo }}</div>
+            @endif
+            <div><strong>Cliente:</strong> {{ $presupuesto->nombre_cliente ?: 'Consumidor final' }}</div>
+            <div><strong>Teléfono:</strong> {{ $presupuesto->telefono_cliente ?: '-' }}</div>
         </div>
 
-        <hr>
+        <hr class="separador">
 
         @php
             $serviciosCategorias = [13, 14];
             $articulos = $productos->filter(function($item) use ($serviciosCategorias) {
                 $cat = strtolower($item->nombre_categoria ?? '');
-                return !in_array($item->id_categoria ?? 0, $serviciosCategorias) 
-                    && !str_starts_with($cat, 's -') 
-                    && !str_starts_with($cat, 'in -') 
-                    && !str_contains($cat, 'servicio') 
+                return !in_array($item->id_categoria ?? 0, $serviciosCategorias)
+                    && !str_starts_with($cat, 's -')
+                    && !str_starts_with($cat, 'in -')
+                    && !str_contains($cat, 'servicio')
                     && !str_contains($cat, 'instalac');
             });
 
             $servicios = $productos->filter(function($item) use ($serviciosCategorias) {
                 $cat = strtolower($item->nombre_categoria ?? '');
-                return in_array($item->id_categoria ?? 0, $serviciosCategorias) 
-                    || str_starts_with($cat, 's -') 
-                    || str_starts_with($cat, 'in -') 
-                    || str_contains($cat, 'servicio') 
+                return in_array($item->id_categoria ?? 0, $serviciosCategorias)
+                    || str_starts_with($cat, 's -')
+                    || str_starts_with($cat, 'in -')
+                    || str_contains($cat, 'servicio')
                     || str_contains($cat, 'instalac');
             });
         @endphp
 
         @if($articulos->count() > 0 || (isset($promociones) && count($promociones) > 0))
             @if($servicios->count() > 0)
-                <div style="font-weight: bold; font-size: 12px; text-transform: uppercase; margin-bottom: 5px; background: #f0f0f0; padding: 4px 8px; border-left: 3px solid #333;">
-                    PRODUCTOS
-                </div>
+                <div class="seccion-titulo">Productos</div>
             @endif
+
             <table class="tabla-productos">
                 <thead>
                     <tr>
-                        <th>Código</th>
-                        <th>Descripción</th>
-                        <th>Cant.</th>
-                        <th>Precio unit.</th>
-                        <th>Total</th>
+                        <th style="width: 16%;">Código</th>
+                        <th style="width: 30%;">Descripción</th>
+                        <th style="width: 10%;">Cant.</th>
+                        <th style="width: 22%;">P. Unit.</th>
+                        <th style="width: 22%;">Total</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {{-- Imprimir Productos Individuales --}}
                     @foreach ($articulos as $producto)
                         <tr>
                             <td>{{ $producto->codigo ?: $producto->codigo_barra ?: '-' }}</td>
                             <td>{{ $producto->nombre }}</td>
                             <td>{{ $producto->cantidad }}</td>
-                            <td>${{ number_format($producto->precio, 2) }}</td>
-                            <td>${{ number_format($producto->cantidad * $producto->precio, 2) }}</td>
+                            <td>${{ number_format($producto->precio, 2, ',', '.') }}</td>
+                            <td>${{ number_format($producto->cantidad * $producto->precio, 2, ',', '.') }}</td>
                         </tr>
                     @endforeach
 
-                    {{-- Imprimir Promociones (Si hay) --}}
                     @if(isset($promociones) && count($promociones) > 0)
                         @foreach ($promociones as $promo)
                             <tr>
                                 <td>PROMO</td>
-                                <td>{{ $promo->nombre }}</td>
+                                <td><strong>Promo:</strong> {{ $promo->nombre }}</td>
                                 <td>{{ $promo->cantidad }}</td>
-                                <td>${{ number_format($promo->precio, 2) }}</td>
-                                <td>${{ number_format($promo->cantidad * $promo->precio, 2) }}</td>
+                                <td>${{ number_format($promo->precio, 2, ',', '.') }}</td>
+                                <td>${{ number_format($promo->cantidad * $promo->precio, 2, ',', '.') }}</td>
                             </tr>
                         @endforeach
                     @endif
@@ -178,17 +442,15 @@
         @endif
 
         @if($servicios->count() > 0)
-            <div style="font-weight: bold; font-size: 12px; text-transform: uppercase; margin-top: 15px; margin-bottom: 5px; background: #f0f0f0; padding: 4px 8px; border-left: 3px solid #333;">
-                SERVICIOS E INSTALACIONES
-            </div>
+            <div class="seccion-titulo">Servicios e instalaciones</div>
             <table class="tabla-productos">
                 <thead>
                     <tr>
-                        <th>Código</th>
-                        <th>Descripción</th>
-                        <th>Cant.</th>
-                        <th>Precio unit.</th>
-                        <th>Total</th>
+                        <th style="width: 16%;">Código</th>
+                        <th style="width: 30%;">Descripción</th>
+                        <th style="width: 10%;">Cant.</th>
+                        <th style="width: 22%;">P. Unit.</th>
+                        <th style="width: 22%;">Total</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -197,8 +459,8 @@
                             <td>{{ $servicio->codigo ?: $servicio->codigo_barra ?: '-' }}</td>
                             <td>{{ $servicio->nombre }}</td>
                             <td>{{ $servicio->cantidad }}</td>
-                            <td>${{ number_format($servicio->precio, 2) }}</td>
-                            <td>${{ number_format($servicio->cantidad * $servicio->precio, 2) }}</td>
+                            <td>${{ number_format($servicio->precio, 2, ',', '.') }}</td>
+                            <td>${{ number_format($servicio->cantidad * $servicio->precio, 2, ',', '.') }}</td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -206,41 +468,47 @@
         @endif
 
         @if (!empty($presupuesto->observaciones))
-            <div style="margin-top: 15px; padding: 8px 12px; border: 1px dashed #999; border-radius: 4px; background-color: #f8f9fa;">
+            <div class="observaciones-box">
                 <strong>Observaciones:</strong>
-                <p style="margin-top: 3px; font-size: 12px; white-space: pre-line;">{{ $presupuesto->observaciones }}</p>
+                <p>{{ $presupuesto->observaciones }}</p>
             </div>
         @endif
+
+        <hr class="separador">
+
+        <!-- TOTALES -->
         <div class="totales">
             <table>
                 <tr>
-                    <td>SUBTOTAL $</td>
-                    {{-- El subtotal es el Total final + el Descuento --}}
-                    <td>{{ number_format($presupuesto->monto_total + $presupuesto->descuento, 2) }}</td>
+                    <td>Subtotal:</td>
+                    <td>${{ number_format($presupuesto->monto_total + $presupuesto->descuento, 2, ',', '.') }}</td>
                 </tr>
-                
+
                 @if ($presupuesto->descuento > 0)
                     <tr>
-                        <td>DESCUENTO $</td>
-                        <td>{{ number_format($presupuesto->descuento, 2) }}</td>
+                        <td>Descuento:</td>
+                        <td>${{ number_format($presupuesto->descuento, 2, ',', '.') }}</td>
                     </tr>
                 @endif
-                
+
                 <tr class="fila-total">
-                    <td>Total $</td>
-                    <td>{{ number_format($presupuesto->monto_total, 2) }}</td>
+                    <td>TOTAL:</td>
+                    <td>${{ number_format($presupuesto->monto_total, 2, ',', '.') }}</td>
                 </tr>
             </table>
         </div>
 
+        <!-- AVISOS -->
         <div class="avisos">
             <p>* Precios sujetos a cambios sin previo aviso.</p>
             <p>* Consultar stock al momento de realizar el pedido.</p>
         </div>
 
+        <!-- PIE -->
         <div class="footer">
-            <p>{{ $local['nombre'] }} — {{ $local['telefono'] }}</p>
+            {{ $local['nombre'] }} — {{ $local['telefono'] }}
         </div>
+
     </div>
 
 </body>
